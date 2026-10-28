@@ -799,15 +799,6 @@ with tab3:
 
     df_h_score = pd.DataFrame(hannah_stats_list).sort_values("ĐIỂM HIỆU SUẤT", ascending=False).reset_index(drop=True)
 
-    if not df_h_score.empty:
-        top_h = df_h_score.iloc[0]
-        st.success(
-            f"🏆 **Hannah Xuất Sắc Dẫn Đầu Quản Trị H1:** **{top_h['HANNAH']}** — "
-            f"Điểm Hiệu Suất: **{top_h['ĐIỂM HIỆU SUẤT']}/100** | "
-            f"Tỷ lệ can thiệp thành công: **{top_h['TỶ LỆ CAN THIỆP THÀNH CÔNG (%)']}%** | "
-            f"Cứu nguy thành công: **{top_h['🟢 CỨU NGUY THÀNH CÔNG']} học viên**"
-        )
-
     st.dataframe(
         df_h_score,
         use_container_width=True,
