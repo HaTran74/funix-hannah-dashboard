@@ -490,22 +490,128 @@ with tab1:
 
     c1, c2 = st.columns([3, 2])
     with c1:
-        st.markdown("##### 📊 Xu Hướng Số Lượng Học Viên Từng Tag Qua Các Tuần")
-        df_tag_trend = df_quarter.groupby(["WEEK", "TAG_CODE"]).size().reset_index(name="SỐ_LƯỢNG")
-        fig_tt = px.bar(
-            df_tag_trend,
-            x="WEEK",
-            y="SỐ_LƯỢNG",
-            color="TAG_CODE",
-            color_discrete_map={
-                "H1": "#1c7ed6", "H2.1": "#0ca678", "H2.2": "#f59f00",
-                "H0.1": "#f03e3e", "H0.2": "#868e96", "Khác": "#adb5bd"
-            },
-            barmode="stack",
-            height=350
-        )
-        fig_tt.update_layout(margin=dict(l=10, r=10, t=10, b=10), legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1))
-        st.plotly_chart(fig_tt, use_container_width=True)
+        c1_head, c1_ctrl = st.columns([1.6, 1.4])
+        with c1_head:
+            st.markdown("##### 📊 Xu Hướng Học Viên Từng Tag Qua Các Tuần")
+        with c1_ctrl:
+            trend_view_mode = st.radio(
+                "Chế độ hiển thị:",
+                ["Số lượng (kèm %)", "Tỷ trọng 100%"],
+                horizontal=True,
+                label_visibility="collapsed",
+                key="tag_trend_view_mode",
+                help="Chọn 'Số lượng (kèm %)' để xem số lượng thực tế kèm nhãn %, hoặc 'Tỷ trọng 100%' để so sánh cơ cấu tỷ lệ học viên qua các tuần."
+            )
+
+        df_trend_src = df_quarter.copy()
+        if selected_hannahs and len(selected_hannahs) < len(all_hannahs):
+            df_trend_src = df_trend_src[df_trend_src["HANNAH"].isin(selected_hannahs)]
+        if selected_progs and len(selected_progs) < len(all_progs):
+            df_trend_src = df_trend_src[df_trend_src["CHƯƠNG_TRÌNH"].isin(selected_progs)]
+
+        df_tag_trend = df_trend_src.groupby(["WEEK", "TAG_CODE"]).size().reset_index(name="SỐ_LƯỢNG")
+
+        if not df_tag_trend.empty:
+            total_per_week = df_tag_trend.groupby("WEEK")["SỐ_LƯỢNG"].transform("sum")
+            df_tag_trend["TỔNG_TUẦN"] = total_per_week
+            df_tag_trend["TỶ_LỆ"] = np.where(total_per_week > 0, (df_tag_trend["SỐ_LƯỢNG"] / total_per_week * 100), 0.0)
+
+            # Nhãn hiển thị trên thanh cột:
+            # - Dạng Số lượng: hiển thị Số lượng và % (hoặc chỉ % nếu phân đoạn vừa phải)
+            df_tag_trend["NHÃN_SỐ_LƯỢNG"] = df_tag_trend.apply(
+                lambda r: f"{r['SỐ_LƯỢNG']:,}<br>({r['TỶ_LỆ']:.1f}%)" if r["TỶ_LỆ"] >= 7.0 else (f"{r['TỶ_LỆ']:.1f}%" if r["TỶ_LỆ"] >= 3.5 else ""),
+                axis=1
+            )
+            # - Dạng Tỷ trọng 100%: hiển thị %
+            df_tag_trend["NHÃN_TỶ_LỆ"] = df_tag_trend["TỶ_LỆ"].apply(
+                lambda v: f"{v:.1f}%" if v >= 3.5 else ""
+            )
+
+            sorted_weeks = sorted(df_tag_trend["WEEK"].unique().tolist())
+            tag_order = ["H1", "H2.1", "H2.2", "H0.1", "H0.2", "Khác"]
+
+            is_pct_mode = (trend_view_mode == "Tỷ trọng 100%")
+            y_field = "TỶ_LỆ" if is_pct_mode else "SỐ_LƯỢNG"
+            text_field = "NHÃN_TỶ_LỆ" if is_pct_mode else "NHÃN_SỐ_LƯỢNG"
+
+            fig_tt = px.bar(
+                df_tag_trend,
+                x="WEEK",
+                y=y_field,
+                color="TAG_CODE",
+                text=text_field,
+                custom_data=["TAG_CODE", "SỐ_LƯỢNG", "TỶ_LỆ", "WEEK"],
+                category_orders={"WEEK": sorted_weeks, "TAG_CODE": tag_order},
+                color_discrete_map={
+                    "H1": "#1c7ed6", "H2.1": "#0ca678", "H2.2": "#f59f00",
+                    "H0.1": "#f03e3e", "H0.2": "#868e96", "Khác": "#adb5bd"
+                },
+                barmode="stack",
+                height=350
+            )
+
+            hover_tmpl = (
+                "<b>Tuần %{customdata[3]} — Tag %{customdata[0]}</b><br>"
+                "Tỷ trọng trong tuần: <b>%{customdata[2]:.1f}%</b><br>"
+                "Số lượng: <b>%{customdata[1]:,} học viên</b><extra></extra>"
+            ) if is_pct_mode else (
+                "<b>Tuần %{customdata[3]} — Tag %{customdata[0]}</b><br>"
+                "Số lượng: <b>%{customdata[1]:,} học viên</b><br>"
+                "Tỷ trọng trong tuần: <b>%{customdata[2]:.1f}%</b><extra></extra>"
+            )
+
+            fig_tt.update_traces(
+                textposition="inside",
+                insidetextanchor="middle",
+                textfont=dict(size=11),
+                hovertemplate=hover_tmpl
+            )
+
+            if is_pct_mode:
+                fig_tt.update_layout(
+                    yaxis=dict(title="Tỷ trọng (%)", range=[0, 100], ticksuffix="%"),
+                    xaxis=dict(title=""),
+                    margin=dict(l=10, r=10, t=10, b=10),
+                    legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
+                )
+            else:
+                fig_tt.update_layout(
+                    yaxis=dict(title="Số lượng học viên"),
+                    xaxis=dict(title=""),
+                    margin=dict(l=10, r=10, t=10, b=10),
+                    legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
+                )
+
+            st.plotly_chart(fig_tt, use_container_width=True)
+
+            with st.expander("📋 Xem bảng số liệu chi tiết (Số lượng & % tỷ trọng từng tuần)", expanded=False):
+                pivot_pct = df_tag_trend.pivot(index="TAG_CODE", columns="WEEK", values="TỶ_LỆ").fillna(0)
+                pivot_cnt = df_tag_trend.pivot(index="TAG_CODE", columns="WEEK", values="SỐ_LƯỢNG").fillna(0)
+                
+                existing_tags = [t for t in tag_order if t in pivot_cnt.index] + [t for t in pivot_cnt.index if t not in tag_order]
+                pivot_summary = pd.DataFrame(index=existing_tags)
+                
+                for col in sorted_weeks:
+                    if col in pivot_cnt.columns:
+                        col_cnt = pivot_cnt[col]
+                        col_pct = pivot_pct[col]
+                        pivot_summary[col] = [
+                            f"{int(col_cnt.get(t, 0)):,} ({col_pct.get(t, 0.0):.1f}%)" for t in existing_tags
+                        ]
+                
+                total_row = {}
+                for col in sorted_weeks:
+                    if col in pivot_cnt.columns:
+                        tot = int(pivot_cnt[col].sum())
+                        total_row[col] = f"{tot:,} (100.0%)"
+                    else:
+                        total_row[col] = "-"
+                total_df = pd.DataFrame([total_row], index=["TỔNG CỘNG"])
+                pivot_final = pd.concat([pivot_summary, total_df])
+                
+                st.dataframe(pivot_final, use_container_width=True)
+        else:
+            st.info("Không có dữ liệu xu hướng học viên theo Tag.")
 
     with c2:
         st.markdown("##### 🍩 Tỷ Trọng Phân Bổ Học Viên Theo Tag")
