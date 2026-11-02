@@ -935,7 +935,7 @@ with tab3:
         st.plotly_chart(fig_recov, use_container_width=True)
 
     with hc2:
-        st.markdown("##### 🤝 So Sánh Lượt Mentor Support & Sản Phẩm Học Thuật Tuần")
+        st.markdown("##### 🚨 Phân Bổ Học Viên Cứu Nguy Thành Công vs Vẫn Bất Động Theo Hannah")
         fig_mentor_comp = px.bar(
             df_h_score,
             x="HANNAH",
@@ -951,63 +951,333 @@ with tab3:
         st.plotly_chart(fig_mentor_comp, use_container_width=True)
 
 # =========================================================================
-# TAB 4: SẢN PHẨM HỌC THUẬT & MENTOR (ĐỦ 5 LOẠI)
+# TAB 4: PHÂN TÍCH QUY TRÌNH HỌC TẬP & PHỄU CHUYỂN HÓA HỌC THUẬT THEO TUẦN
 # =========================================================================
 with tab4:
-    st.subheader("📚 Chi Tiết Sản Phẩm Học Thuật Hoàn Thành & Tương Tác Mentor")
-    st.caption("Bao gồm đầy đủ 5 sản phẩm cốt lõi: **QUIZ**, **LAB**, **ASSIGNMENT**, **PROGRESS_TEST**, **FINAL_EXAM**.")
+    period_label = selected_week if selected_week != "Tất cả tuần trong Quý" else selected_quarter
+    st.subheader(f"📚 Phân Tích Quy Trình Học Tập & Chuyển Hóa Học Thuật ({period_label})")
+    st.caption("Mô hình phễu 3 bước: **(1) Vào học LMS ➔ (2) Hỗ trợ Mentor ➔ (3) Hoàn thành Sản phẩm Học thuật**, phân tích sâu hành vi và giải quyết điểm nghẽn học tập.")
 
-    st.markdown("##### 📝 1. Tổng Sản Phẩm Bài Tập Đã Hoàn Thành (Học viên Tag H1)")
-    ac1, ac2, ac3, ac4, ac5 = st.columns(5)
-    with ac1:
-        st.metric("🧪 QUIZ ĐÃ XONG", f"{int(df_deep['QUIZ_DONE'].sum()):,}", help="Tổng số bài Quiz đã hoàn thành")
-    with ac2:
-        st.metric("🧪 LAB ĐÃ XONG", f"{int(df_deep['LAB_DONE'].sum()):,}", help="Tổng số bài Lab đã hoàn thành")
-    with ac3:
-        st.metric("📑 ASSIGNMENT ĐÃ XONG", f"{int(df_deep['ASSIGNMENT_DONE'].sum()):,}", help="Tổng số Assignment đã hoàn thành")
-    with ac4:
-        st.metric("🎯 PROGRESS TEST", f"{int(df_deep['PROGRESS_TEST_DONE'].sum()):,}", help="Tổng số Progress Test đã hoàn thành")
-    with ac5:
-        st.metric("🏆 FINAL EXAM", f"{int(df_deep['FINAL_EXAM_DONE'].sum()):,}", help="Tổng số Final Exam đã thi đậu")
+    tot_deep = len(df_deep)
+
+    # Đếm số lượng học viên tham gia từng giai đoạn
+    n_access = (df_deep["LEARNING_ACCESS"] > 0).sum()
+    tot_access = int(df_deep["LEARNING_ACCESS"].sum())
+    pct_access = (n_access / tot_deep * 100) if tot_deep > 0 else 0.0
+
+    n_mentor = (df_deep["MENTOR_SUPPORT"] > 0).sum()
+    tot_mentor = int(df_deep["MENTOR_SUPPORT"].sum())
+    pct_mentor = (n_mentor / tot_deep * 100) if tot_deep > 0 else 0.0
+
+    n_output = (df_deep["ACADEMIC_OUTPUT"] > 0).sum()
+    tot_output = int(df_deep["ACADEMIC_OUTPUT"].sum())
+    pct_output = (n_output / tot_deep * 100) if tot_deep > 0 else 0.0
+
+    # Tỷ lệ chuyển hóa từ Vào học LMS -> Ra sản phẩm bài tập
+    pct_conv = (n_output / n_access * 100) if n_access > 0 else 0.0
+
+    # Phân nhóm hành vi học tập
+    n_stuck = ((df_deep["LEARNING_ACCESS"] > 0) & (df_deep["ACADEMIC_OUTPUT"] == 0)).sum()
+    pct_stuck = (n_stuck / tot_deep * 100) if tot_deep > 0 else 0.0
+
+    n_inact = (df_deep["TOTAL_ACTIVITY"] == 0).sum()
+    pct_inact = (n_inact / tot_deep * 100) if tot_deep > 0 else 0.0
+
+    # -------------------------------------------------------------
+    # KHỐI 1: PHỄU CHUYỂN HÓA HỌC TẬP TUẦN (WEEKLY PIPELINE CARDS)
+    # -------------------------------------------------------------
+    st.markdown(f"##### ⚡ 1. Phễu Hoạt Động & Chuyển Hóa Học Tập Trong Tuần ({period_label})")
+    
+    col_p1, col_p2, col_p3, col_p4 = st.columns(4)
+    with col_p1:
+        st.markdown(f"""
+        <div class="metric-card" style="border-left-color: #1c7ed6;">
+            <div class="metric-title" style="color: #1c7ed6;">🌐 BƯỚC 1: VÀO HỌC LMS</div>
+            <div class="metric-value">{n_access:,} <span style="font-size: 16px; font-weight: normal; color: #6c757d;">HV</span></div>
+            <div class="metric-sub"><b>{pct_access:.1f}%</b> quy mô • Tổng {tot_access:,} lượt vào học</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with col_p2:
+        st.markdown(f"""
+        <div class="metric-card" style="border-left-color: #7950f2;">
+            <div class="metric-title" style="color: #7950f2;">🤝 BƯỚC 2: DÙNG MENTOR</div>
+            <div class="metric-value">{n_mentor:,} <span style="font-size: 16px; font-weight: normal; color: #6c757d;">HV</span></div>
+            <div class="metric-sub"><b>{pct_mentor:.1f}%</b> quy mô • Tổng {tot_mentor:,} lượt kết nối/zoom</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with col_p3:
+        st.markdown(f"""
+        <div class="metric-card" style="border-left-color: #0ca678;">
+            <div class="metric-title" style="color: #0ca678;">📝 BƯỚC 3: RA SẢN PHẨM</div>
+            <div class="metric-value">{n_output:,} <span style="font-size: 16px; font-weight: normal; color: #6c757d;">HV</span></div>
+            <div class="metric-sub"><b>{pct_output:.1f}%</b> quy mô • Tổng <b>{tot_output:,}</b> bài nộp & pass</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with col_p4:
+        st.markdown(f"""
+        <div class="metric-card" style="border-left-color: #f59f00;">
+            <div class="metric-title" style="color: #f59f00;">🎯 HIỆU SUẤT CHUYỂN HÓA</div>
+            <div class="metric-value">{pct_conv:.1f}%</div>
+            <div class="metric-sub">Cứ 100 HV vào học có <b>{pct_conv:.1f}</b> bạn ra bài</div>
+        </div>
+        """, unsafe_allow_html=True)
 
     st.markdown("---")
 
-    st.markdown("##### ⚡ 2. Khối Lượng Tương Tác Học Tập Trong Tuần Báo Cáo")
-    wk1, wk2, wk3, wk4 = st.columns(4)
-    with wk1:
-        st.metric("📝 SẢN PHẨM NỘP TUẦN", f"{int(df_deep['ACADEMIC_OUTPUT'].sum()):,}", help="Tổng số bài tập nộp và pass trong tuần")
-    with wk2:
-        st.metric("🤝 MENTOR SUPPORT TUẦN", f"{int(df_deep['MENTOR_SUPPORT'].sum()):,}", help="Tổng lượt hỏi mentor và book zoom trong tuần")
-    with wk3:
-        st.metric("🌐 LƯỢT ĐĂNG NHẬP LMS", f"{int(df_deep['LEARNING_ACCESS'].sum()):,}", help="Tổng số lượt vào học hệ thống LMS")
-    with wk4:
-        st.metric("⚡ XP TĂNG TRONG TUẦN", f"{int(df_deep['XP_TĂNG_TRONG_TUẦN'].sum()):,}", help="Tổng XP toàn bộ học viên H1 tích lũy thêm")
+    # -------------------------------------------------------------
+    # KHỐI 2: PHÂN TÍCH SÂU HÀNH VI & BẰNG CHỨNG TÁC ĐỘNG MENTOR
+    # -------------------------------------------------------------
+    st.markdown("##### 🔬 2. Phân Tích Sâu Hành Vi Học Tập & Bằng Chứng Tác Động Mentor")
+
+    # Tính toán tác động của Mentor đối với tỷ lệ nộp bài
+    with_m = df_deep[df_deep["MENTOR_SUPPORT"] > 0]
+    no_m = df_deep[df_deep["MENTOR_SUPPORT"] == 0]
+    pct_m_out = (with_m["ACADEMIC_OUTPUT"] > 0).sum() / len(with_m) * 100 if len(with_m) > 0 else 0.0
+    pct_nom_out = (no_m["ACADEMIC_OUTPUT"] > 0).sum() / len(no_m) * 100 if len(no_m) > 0 else 0.0
+    delta_mentor = pct_m_out - pct_nom_out
+
+    # Callout insight chứng minh giá trị Mentor
+    st.markdown(f"""
+    <div style="background-color: #e7f5ff; border: 1px solid #74c0fc; border-left: 5px solid #1c7ed6; border-radius: 8px; padding: 12px 16px; margin-bottom: 16px;">
+        <b style="color: #1864ab;">💡 BẰNG CHỨNG DỮ LIỆU VỀ TÁC ĐỘNG CỦA MENTOR SUPPORT:</b><br>
+        • Học viên <b>CÓ kết nối Mentor</b> trong tuần đạt tỷ lệ nộp bài <b>{pct_m_out:.1f}%</b> ({(with_m['ACADEMIC_OUTPUT'] > 0).sum()}/{len(with_m)} bạn).<br>
+        • Học viên <b>KHÔNG hỏi Mentor</b> chỉ đạt tỷ lệ nộp bài <b>{pct_nom_out:.1f}%</b> ({(no_m['ACADEMIC_OUTPUT'] > 0).sum()}/{len(no_m)} bạn).<br>
+        ➔ <b style="color: #2b8a3e;">Mentor Support giúp tăng cơ hội hoàn thành bài tập thêm +{delta_mentor:.1f}%!</b> Thúc đẩy học viên hỏi Mentor là đòn bẩy quan trọng nhất để chuyển hóa từ "Vào học" sang "Nộp bài".
+    </div>
+    """, unsafe_allow_html=True)
+
+    g1, g2 = st.columns([1, 1])
+
+    with g1:
+        st.markdown("###### 🔻 Phễu Chuyển Hóa Học Tập Trong Tuần")
+        fig_funnel = go.Figure(go.Funnel(
+            y=["1. Quy Mô Học Viên H1", "2. Có Vào Học LMS", "3. Nộp Bài Thành Công"],
+            x=[tot_deep, n_access, n_output],
+            textinfo="value+percent initial",
+            marker=dict(color=["#1c7ed6", "#339af0", "#0ca678"])
+        ))
+        fig_funnel.update_layout(
+            margin=dict(l=10, r=10, t=10, b=10),
+            height=270
+        )
+        st.plotly_chart(fig_funnel, use_container_width=True)
+
+    with g2:
+        st.markdown("###### 🍩 Cơ Cấu 3 Nhóm Hành Vi Học Tập Trong Tuần")
+        df_seg = pd.DataFrame({
+            "PHÂN_KHÚC": [
+                "🟢 Nộp bài thành công",
+                "🟡 Vào học nhưng kẹt bài (Chưa nộp)",
+                "🔴 Bất động hoàn toàn"
+            ],
+            "SỐ_LƯỢNG": [n_output, n_stuck, n_inact]
+        })
+        fig_seg = px.pie(
+            df_seg,
+            names="PHÂN_KHÚC",
+            values="SỐ_LƯỢNG",
+            color="PHÂN_KHÚC",
+            color_discrete_map={
+                "🟢 Nộp bài thành công": "#0ca678",
+                "🟡 Vào học nhưng kẹt bài (Chưa nộp)": "#f59f00",
+                "🔴 Bất động hoàn toàn": "#f03e3e"
+            },
+            hole=0.45,
+            height=270
+        )
+        fig_seg.update_traces(textposition="inside", textinfo="percent+label")
+        fig_seg.update_layout(margin=dict(l=10, r=10, t=10, b=10), showlegend=False)
+        st.plotly_chart(fig_seg, use_container_width=True)
 
     st.markdown("---")
 
-    st.markdown("##### 📊 Cơ Cấu 5 Loại Sản Phẩm Học Thuật Tích Lũy Theo Từng Hannah")
-    academic_by_h = df_deep.groupby("HANNAH")[
-        ["QUIZ_DONE", "LAB_DONE", "ASSIGNMENT_DONE", "PROGRESS_TEST_DONE", "FINAL_EXAM_DONE"]
-    ].sum().reset_index()
-    academic_by_h = academic_by_h.rename(columns={
-        "QUIZ_DONE": "Quiz", "LAB_DONE": "Lab", "ASSIGNMENT_DONE": "Assignment",
-        "PROGRESS_TEST_DONE": "Progress Test", "FINAL_EXAM_DONE": "Final Exam"
-    })
+    # -------------------------------------------------------------
+    # KHỐI 3: SO SÁNH HIỆU QUẢ CHUYỂN HÓA THEO TỪNG HANNAH
+    # -------------------------------------------------------------
+    st.markdown(f"##### 👩‍💼 3. So Sánh Hiệu Quả Chuyển Hóa Học Tập Giữa Các Hannah ({period_label})")
 
-    ac_melted = academic_by_h.melt(id_vars="HANNAH", var_name="LOẠI_BÀI", value_name="SỐ_LƯỢNG")
-    fig_ac_all5 = px.bar(
-        ac_melted,
-        x="HANNAH",
-        y="SỐ_LƯỢNG",
-        color="LOẠI_BÀI",
-        barmode="stack",
-        height=360
+    h_pipe = df_deep.groupby("HANNAH").apply(lambda g: pd.Series({
+        "TỔNG_HV": len(g),
+        "HV_VÀO_LMS": (g["LEARNING_ACCESS"] > 0).sum(),
+        "%_VÀO_LMS": round((g["LEARNING_ACCESS"] > 0).sum() / len(g) * 100, 1),
+        "HV_HỎI_MENTOR": (g["MENTOR_SUPPORT"] > 0).sum(),
+        "%_DÙNG_MENTOR": round((g["MENTOR_SUPPORT"] > 0).sum() / len(g) * 100, 1),
+        "HV_NỘP_BÀI": (g["ACADEMIC_OUTPUT"] > 0).sum(),
+        "%_NỘP_BÀI": round((g["ACADEMIC_OUTPUT"] > 0).sum() / len(g) * 100, 1),
+        "HV_KẸT_TIẾN_ĐỘ": ((g["LEARNING_ACCESS"] > 0) & (g["ACADEMIC_OUTPUT"] == 0)).sum(),
+        "HV_BẤT_ĐỘNG": (g["TOTAL_ACTIVITY"] == 0).sum(),
+        "TỔNG_SẢN_PHẨM": int(g["ACADEMIC_OUTPUT"].sum()),
+        "TỶ_LỆ_CHUYỂN_HÓA": round((g["ACADEMIC_OUTPUT"] > 0).sum() / max((g["LEARNING_ACCESS"] > 0).sum(), 1) * 100, 1)
+    })).reset_index()
+
+    h_col1, h_col2 = st.columns([1.2, 0.8])
+
+    with h_col1:
+        st.markdown("###### 📊 Khối Lượng Hành Vi Học Tập Từng Hannah")
+        h_pipe_melted = h_pipe.melt(
+            id_vars="HANNAH",
+            value_vars=["HV_VÀO_LMS", "HV_HỎI_MENTOR", "HV_NỘP_BÀI", "HV_KẸT_TIẾN_ĐỘ"],
+            var_name="LOẠI_HÀNH_VI",
+            value_name="SỐ_HV"
+        )
+        h_pipe_melted["LOẠI_HÀNH_VI"] = h_pipe_melted["LOẠI_HÀNH_VI"].map({
+            "HV_VÀO_LMS": "1. Vào học LMS",
+            "HV_HỎI_MENTOR": "2. Dùng Mentor",
+            "HV_NỘP_BÀI": "3. Nộp bài thành công",
+            "HV_KẸT_TIẾN_ĐỘ": "⚠️ Kẹt bài (Chưa nộp)"
+        })
+
+        fig_h_pipe = px.bar(
+            h_pipe_melted,
+            x="HANNAH",
+            y="SỐ_HV",
+            color="LOẠI_HÀNH_VI",
+            barmode="group",
+            text="SỐ_HV",
+            color_discrete_map={
+                "1. Vào học LMS": "#1c7ed6",
+                "2. Dùng Mentor": "#7950f2",
+                "3. Nộp bài thành công": "#0ca678",
+                "⚠️ Kẹt bài (Chưa nộp)": "#f59f00"
+            },
+            height=320
+        )
+        fig_h_pipe.update_traces(textposition="outside")
+        fig_h_pipe.update_layout(
+            margin=dict(l=10, r=10, t=10, b=10),
+            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
+        )
+        st.plotly_chart(fig_h_pipe, use_container_width=True)
+
+    with h_col2:
+        st.markdown("###### 📋 Bảng So Sánh Chi Tiết")
+        st.dataframe(
+            h_pipe[[
+                "HANNAH", "TỔNG_HV", "%_VÀO_LMS", "%_DÙNG_MENTOR",
+                "%_NỘP_BÀI", "HV_KẸT_TIẾN_ĐỘ", "TỔNG_SẢN_PHẨM"
+            ]].rename(columns={
+                "HANNAH": "Hannah",
+                "TỔNG_HV": "Tổng HV",
+                "%_VÀO_LMS": "% Vào LMS",
+                "%_DÙNG_MENTOR": "% Mentor",
+                "%_NỘP_BÀI": "% Nộp bài",
+                "HV_KẸT_TIẾN_ĐỘ": "⚠️ Kẹt bài",
+                "TỔNG_SẢN_PHẨM": "Bài đạt"
+            }),
+            use_container_width=True,
+            hide_index=True
+        )
+
+    st.markdown("---")
+
+    # -------------------------------------------------------------
+    # KHỐI 4: DANH SÁCH HỌC VIÊN ĐỂ HANNAH HÀNH ĐỘNG NGAY (ACTION DRILL-DOWN)
+    # -------------------------------------------------------------
+    st.markdown("##### 🎯 4. Danh Sách Học Viên Theo Từng Phân Khúc Để Hannah Can Thiệp")
+
+    def assign_action_segment(r):
+        acc = r["LEARNING_ACCESS"]
+        men = r["MENTOR_SUPPORT"]
+        out = r["ACADEMIC_OUTPUT"]
+        act = r["TOTAL_ACTIVITY"]
+        if out > 0:
+            return "🟢 Đã nộp bài thành công"
+        elif acc > 0:
+            if men > 0:
+                return "🤝 Có hỏi Mentor nhưng chưa nộp bài"
+            return "🟡 Vào học nhưng kẹt tiến độ (Cần Push nộp bài)"
+        elif act > 0:
+            return "⚪ Có hoạt động khác (Chưa nộp bài)"
+        else:
+            return "🔴 Bất động hoàn toàn (Không học)"
+
+    df_deep_action = df_deep.copy()
+    df_deep_action["PHÂN_KHÚC_HÀNH_VI"] = df_deep_action.apply(assign_action_segment, axis=1)
+
+    c_filter, c_count = st.columns([2, 1])
+    with c_filter:
+        selected_seg = st.selectbox(
+            "Chọn phân khúc học viên cần xử lý:",
+            [
+                "🟡 Vào học nhưng kẹt tiến độ (Cần Push nộp bài)",
+                "🔴 Bất động hoàn toàn (Không học)",
+                "🤝 Có hỏi Mentor nhưng chưa nộp bài",
+                "🟢 Đã nộp bài thành công",
+                "Tất cả học viên H1"
+            ],
+            index=0
+        )
+
+    df_filtered_action = df_deep_action.copy()
+    if selected_seg != "Tất cả học viên H1":
+        df_filtered_action = df_filtered_action[df_filtered_action["PHÂN_KHÚC_HÀNH_VI"] == selected_seg]
+
+    with c_count:
+        st.markdown(f"<div style='margin-top: 28px; font-weight: bold; color: #1c7ed6;'>🔍 Số lượng: {len(df_filtered_action):,} học viên</div>", unsafe_allow_html=True)
+
+    action_cols = [
+        "MSSV", "FULL_NAME", "HANNAH", "CHƯƠNG_TRÌNH", "MÔN_ĐANG_HỌC",
+        "LEARNING_ACCESS", "MENTOR_SUPPORT", "ACADEMIC_OUTPUT", "TOTAL_ACTIVITY",
+        "RISK_LEVEL", "ACTION_SUGGESTION"
+    ]
+    present_action_cols = [c for c in action_cols if c in df_filtered_action.columns]
+
+    st.dataframe(
+        df_filtered_action[present_action_cols].rename(columns={
+            "FULL_NAME": "Họ và tên",
+            "HANNAH": "Hannah",
+            "CHƯƠNG_TRÌNH": "Chương trình",
+            "MÔN_ĐANG_HỌC": "Môn đang học",
+            "LEARNING_ACCESS": "Vào LMS",
+            "MENTOR_SUPPORT": "Hỏi Mentor",
+            "ACADEMIC_OUTPUT": "Bài Nộp",
+            "TOTAL_ACTIVITY": "Tổng Activity",
+            "RISK_LEVEL": "Mức Rủi Ro",
+            "ACTION_SUGGESTION": "Đề Xuất Hành Động"
+        }),
+        use_container_width=True,
+        hide_index=True
     )
-    fig_ac_all5.update_layout(
-        margin=dict(l=10, r=10, t=10, b=10),
-        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
-    )
-    st.plotly_chart(fig_ac_all5, use_container_width=True)
+
+    # -------------------------------------------------------------
+    # KHỐI 5: XU HƯỚNG PHỄU HỌC TẬP QUA CÁC TUẦN (EXPANDER)
+    # -------------------------------------------------------------
+    with st.expander("📈 Xem xu hướng biến động Phễu Học Tập qua các tuần trong Quý", expanded=False):
+        df_trend_all = df_quarter[df_quarter["TAG_CODE"] == "H1"].copy() if "TAG_CODE" in df_quarter.columns else df_quarter.copy()
+        for c in ["LEARNING_ACCESS", "MENTOR_SUPPORT", "ACADEMIC_OUTPUT", "TOTAL_ACTIVITY"]:
+            if c in df_trend_all.columns:
+                df_trend_all[c] = pd.to_numeric(df_trend_all[c], errors="coerce").fillna(0)
+
+        weekly_trend = df_trend_all.groupby("WEEK").apply(lambda g: pd.Series({
+            "1. Vào học LMS": (g["LEARNING_ACCESS"] > 0).sum(),
+            "2. Nộp sản phẩm": (g["ACADEMIC_OUTPUT"] > 0).sum(),
+            "3. Kẹt bài (Chưa nộp)": ((g["LEARNING_ACCESS"] > 0) & (g["ACADEMIC_OUTPUT"] == 0)).sum(),
+            "4. Bất động hoàn toàn": (g["TOTAL_ACTIVITY"] == 0).sum()
+        })).reset_index()
+
+        trend_melted = weekly_trend.melt(id_vars="WEEK", var_name="CHỈ_SỐ", value_name="SỐ_HV")
+        fig_trend = px.line(
+            trend_melted,
+            x="WEEK",
+            y="SỐ_HV",
+            color="CHỈ_SỐ",
+            markers=True,
+            color_discrete_map={
+                "1. Vào học LMS": "#1c7ed6",
+                "2. Nộp sản phẩm": "#0ca678",
+                "3. Kẹt bài (Chưa nộp)": "#f59f00",
+                "4. Bất động hoàn toàn": "#f03e3e"
+            },
+            height=320
+        )
+        fig_trend.update_layout(
+            margin=dict(l=10, r=10, t=10, b=10),
+            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
+        )
+        st.plotly_chart(fig_trend, use_container_width=True)
 
 # =========================================================================
 # TAB 5: ACTION BOARD ĐỐI SOÁT CHUYỂN BIẾN (H1) — 3 MỤC TIÊU NÂNG CẤP
