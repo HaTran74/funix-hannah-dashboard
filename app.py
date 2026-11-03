@@ -239,7 +239,112 @@ def normalize_dataset(df):
 
     df["KHẢ_NĂNG_HOÀN_THÀNH"] = df.apply(evaluate_completion, axis=1)
 
-    for c in ["WEEK", "MSSV", "FULL_NAME", "EMAIL", "TAG", "HANNAH", "CHƯƠNG_TRÌNH", "MÔN_ĐANG_HỌC", "STUDENT_STATUS", "RISK_LEVEL", "ROOT_CAUSE", "ACTION_SUGGESTION"]:
+    def format_missing_tasks(r):
+        q_miss = max(r.get("QUIZ_TOTAL", 0) - r.get("QUIZ_DONE", 0), 0)
+        l_miss = max(r.get("LAB_TOTAL", 0) - r.get("LAB_DONE", 0), 0)
+        a_miss = max(r.get("ASSIGNMENT_TOTAL", 0) - r.get("ASSIGNMENT_DONE", 0), 0)
+        p_miss = max(r.get("PROGRESS_TEST_TOTAL", 0) - r.get("PROGRESS_TEST_DONE", 0), 0)
+        f_miss = 1 if (r.get("FINAL_EXAM_TOTAL", 0) > 0 and r.get("FINAL_EXAM_DONE", 0) == 0) else 0
+
+        items = []
+        if q_miss > 0: items.append(f"{q_miss} Quiz")
+        if l_miss > 0: items.append(f"{l_miss} Lab")
+        if a_miss > 0: items.append(f"{a_miss} ASM")
+        if p_miss > 0: items.append(f"{p_miss} Progress Test")
+        if f_miss > 0: items.append("Thi Final Exam")
+        return ", ".join(items) if items else "Đã xong 100% bài môn"
+
+    def format_xp_progress(r):
+        done = r.get("XP_ĐÃ_ĐẠT", 0)
+        req = r.get("XP_CẦN_ĐẠT", 0)
+        pct = str(r.get("%_HOÀN_THÀNH_XP", "")).strip()
+        if pct and pct != "nan" and pct != "None":
+            return f"{done:,} / {req:,} ({pct})"
+        return f"{done:,} / {req:,}"
+
+    def generate_smart_push_action(r):
+        rem_c = int(r.get("SỐ_MÔN_CÒN_LẠI", 0))
+        tot_c = int(r.get("TỔNG_SỐ_MÔN", 0))
+        m_left = float(r.get("THÁNG_CÒN_LẠI_NUM", 0.0))
+        act = int(r.get("TOTAL_ACTIVITY", 0))
+        course = str(r.get("MÔN_ĐANG_HỌC", "")).strip()
+        xp_done = r.get("XP_ĐÃ_ĐẠT", 0)
+        xp_req = r.get("XP_CẦN_ĐẠT", 0)
+        xp_pct = str(r.get("%_HOÀN_THÀNH_XP", "")).strip()
+        if xp_pct in ["nan", "None"]:
+            xp_pct = ""
+
+        q_miss = max(r.get("QUIZ_TOTAL", 0) - r.get("QUIZ_DONE", 0), 0)
+        l_miss = max(r.get("LAB_TOTAL", 0) - r.get("LAB_DONE", 0), 0)
+        a_miss = max(r.get("ASSIGNMENT_TOTAL", 0) - r.get("ASSIGNMENT_DONE", 0), 0)
+        p_miss = max(r.get("PROGRESS_TEST_TOTAL", 0) - r.get("PROGRESS_TEST_DONE", 0), 0)
+        f_miss = 1 if (r.get("FINAL_EXAM_TOTAL", 0) > 0 and r.get("FINAL_EXAM_DONE", 0) == 0) else 0
+
+        missing_list = []
+        if q_miss > 0: missing_list.append(f"{q_miss} Quiz")
+        if l_miss > 0: missing_list.append(f"{l_miss} Lab")
+        if a_miss > 0: missing_list.append(f"{a_miss} ASM")
+        if p_miss > 0: missing_list.append(f"{p_miss} Progress Test")
+        if f_miss > 0: missing_list.append("Thi Final Exam")
+
+        miss_str = ", ".join(missing_list) if missing_list else "Đã xong 100% bài môn"
+        first_miss = missing_list[0] if missing_list else "bài tập còn lại"
+
+        course_info = f"Môn {course}" if (course and course != "-") else "Môn đang học"
+        if xp_pct:
+            course_info += f" ({xp_pct} XP)"
+        elif xp_req:
+            course_info += f" ({xp_done:,}/{xp_req:,} XP)"
+
+        # 1. Đã hoàn thành 100% môn
+        if tot_c > 0 and rem_c <= 0:
+            return f"🎉 ĐÃ HOÀN THÀNH 100% MÔN ({xp_done:,}/{xp_req:,} XP). Hannah hướng dẫn làm thủ tục công nhận tốt nghiệp & cấp chứng chỉ."
+
+        # 2. Môn cuối cùng để tốt nghiệp (rem_c == 1)
+        if rem_c == 1:
+            prefix = f"🎯 MÔN CUỐI CÙNG TỐT NGHIỆP ({course_info}):"
+            if not missing_list:
+                return f"{prefix} Đã làm hết bài tập môn! Hannah đôn đốc đăng ký lịch thi Final Exam / chốt đồ án ngay tuần này để hoàn thành toàn khóa."
+            if act == 0:
+                return f"{prefix} Còn thiếu [{miss_str}] nhưng tuần này chưa học (Act=0). Còn {m_left:.1f} tháng. Hannah gọi điện trực tiếp, đặt deadline nộp từng bài để về đích sớm!"
+            return f"{prefix} Đang giữ nhịp học tốt (Act={act}). Còn thiếu [{miss_str}] trong {m_left:.1f} tháng. Hannah chốt hạn nộp [{first_miss}] trong tuần này để cán đích!"
+
+        # 3. Còn 2-3 môn và thời gian gấp (m_left <= 2 tháng)
+        if rem_c <= 3 and m_left <= 2.0:
+            prefix = f"⚡ GẤP - NƯỚC RÚT ({rem_c} môn / {m_left:.1f} tháng, {course_info}):"
+            if act == 0:
+                return f"{prefix} Nguy cơ quá hạn vì tuần này không học (Act=0)! Còn thiếu [{miss_str}]. Hannah gọi điện gấp trong 24h, book Mentor hỗ trợ giải quyết bài nghẽn ngay!"
+            if not missing_list:
+                return f"{prefix} Đã xong bài môn này (Act={act}). Cần hoàn thành thi ngay để mở môn tiếp theo trong tuần tới!"
+            return f"{prefix} Đang có đà học (Act={act}). Cần giải quyết dứt điểm [{miss_str}] trước ngày 15 tháng này để kịp mở {rem_c - 1} môn còn lại!"
+
+        # 4. Còn 2-3 môn, thời gian an toàn (m_left > 2 tháng)
+        if rem_c <= 3:
+            prefix = f"🌟 SẮP VỀ ĐÍCH ({rem_c} môn / {m_left:.1f} tháng, {course_info}):"
+            if not missing_list:
+                return f"{prefix} Đã xong 100% bài môn hiện tại (Act={act})! Nhắc học viên đăng ký thi / mở môn tiếp theo."
+            if act == 0:
+                return f"{prefix} Còn thiếu [{miss_str}]. Tuần này chưa có activity, Hannah nhắn tin nhắc nhở quay lại học và làm tiếp [{first_miss}]."
+            return f"{prefix} Tiến độ tốt (Act={act}). Còn thiếu [{miss_str}]. Đôn đốc hoàn thành môn này trong tháng để giữ vững lộ trình về đích."
+
+        # 5. Nguy cơ chậm tiến độ (m_left < 3 tháng hoặc pace cao)
+        pace = rem_c / max(m_left, 0.1)
+        if m_left < 3.0 or pace > 1.2:
+            prefix = f"🚨 NGUY CƠ CHẬM TIẾN ĐỘ ({rem_c} môn / {m_left:.1f} tháng, {course_info}):"
+            if act == 0:
+                return f"{prefix} Đang dừng học (Act=0) trong khi áp lực tiến độ cao ({pace:.1f} môn/tháng). Còn thiếu [{miss_str}]. Hannah liên hệ khẩn cấp lập kế hoạch học lại!"
+            return f"{prefix} Tốc độ yêu cầu {pace:.1f} môn/tháng. Môn hiện tại còn thiếu [{miss_str}]. Hannah họp cùng học viên lập lộ trình học tăng tốc cam kết hàng tuần."
+
+        # 6. Các trường hợp còn lại (Bình thường / Duy trì tiến độ)
+        if act == 0:
+            return f"⚠️ NHẮC NHỞ HỌC TẬP ({course_info}, còn {rem_c} môn / {m_left:.1f} tháng): Tuần này dừng học, còn thiếu [{miss_str}]. Hannah nhắn tin đôn đốc mở bài học tiếp."
+        return f"✅ TIẾN ĐỘ ĐỀU ({course_info}, còn {rem_c} môn / {m_left:.1f} tháng): Còn thiếu [{miss_str}], Act tuần={act}. Duy trì kiểm tra tiến độ học tập hàng tuần."
+
+    df["BÀI_TẬP_CÒN_THIẾU"] = df.apply(format_missing_tasks, axis=1)
+    df["TIẾN_ĐỘ_XP"] = df.apply(format_xp_progress, axis=1)
+    df["ACTION_SUGGESTION"] = df.apply(generate_smart_push_action, axis=1)
+
+    for c in ["WEEK", "MSSV", "FULL_NAME", "EMAIL", "TAG", "HANNAH", "CHƯƠNG_TRÌNH", "MÔN_ĐANG_HỌC", "STUDENT_STATUS", "RISK_LEVEL", "ROOT_CAUSE", "ACTION_SUGGESTION", "BÀI_TẬP_CÒN_THIẾU", "TIẾN_ĐỘ_XP"]:
         if c in df.columns:
             df[c] = df[c].fillna("N/A").astype(str).str.strip()
 
@@ -813,8 +918,8 @@ with tab2:
 
     push_columns = [
         "WEEK", "MSSV", "FULL_NAME", "HANNAH", "CHƯƠNG_TRÌNH", "MÔN_ĐANG_HỌC",
-        "MÔN_HOÀN_THÀNH / TỔNG", "SỐ_MÔN_CÒN_LẠI", "THÁNG_CÒN_LẠI", "TOTAL_ACTIVITY",
-        "KHẢ_NĂNG_HOÀN_THÀNH", "ROOT_CAUSE", "ACTION_SUGGESTION"
+        "SỐ_MÔN_CÒN_LẠI", "THÁNG_CÒN_LẠI", "TOTAL_ACTIVITY",
+        "KHẢ_NĂNG_HOÀN_THÀNH", "TIẾN_ĐỘ_XP", "BÀI_TẬP_CÒN_THIẾU", "ACTION_SUGGESTION"
     ]
     valid_push_cols = [c for c in push_columns if c in df_push_display.columns]
 
@@ -827,10 +932,14 @@ with tab2:
             "MSSV": st.column_config.TextColumn("MSSV", width="small"),
             "FULL_NAME": st.column_config.TextColumn("Họ và Tên", width="medium"),
             "HANNAH": st.column_config.TextColumn("Hannah", width="small"),
+            "MÔN_ĐANG_HỌC": st.column_config.TextColumn("Môn Đang Học", width="small"),
             "SỐ_MÔN_CÒN_LẠI": st.column_config.NumberColumn("Môn Còn Lại", width="small"),
             "THÁNG_CÒN_LẠI": st.column_config.TextColumn("Tháng Còn Lại", width="small"),
             "TOTAL_ACTIVITY": st.column_config.NumberColumn("Activity Tuần", width="small"),
-            "KHẢ_NĂNG_HOÀN_THÀNH": st.column_config.TextColumn("Đánh Giá Hoàn Thành", width="medium")
+            "KHẢ_NĂNG_HOÀN_THÀNH": st.column_config.TextColumn("Đánh Giá Hoàn Thành", width="medium"),
+            "TIẾN_ĐỘ_XP": st.column_config.TextColumn("Tiến Độ XP", width="small"),
+            "BÀI_TẬP_CÒN_THIẾU": st.column_config.TextColumn("Bài Tập Còn Thiếu (Quiz/Lab/ASM...)", width="medium"),
+            "ACTION_SUGGESTION": st.column_config.TextColumn("💡 Action Gợi Ý Cụ Thể Cho Hannah", width="large")
         }
     )
 
