@@ -440,27 +440,32 @@ df_deep = df_h1 if scope_option.startswith("Chỉ phân tích Tag H1") else df_b
 notes_db = load_notes_db()
 
 # ==================== TÍNH TOÁN ĐO LƯỜNG CHUYỂN BIẾN (W_curr vs W_prev) ====================
-# Chuẩn bị DataFrame của tuần trước để đối soát
-df_prev_lookup = None
-if prev_week_name:
-    df_prev_full = df_clean[df_clean["WEEK"] == prev_week_name]
-    if scope_option.startswith("Chỉ phân tích Tag H1"):
-        df_prev_full = df_prev_full[df_prev_full["TAG_CODE"] == "H1"]
-    df_prev_lookup = df_prev_full.set_index("MSSV")
+# Ánh xạ tuần trước đó cho từng tuần theo thứ tự thời gian
+week_to_prev_map = {all_sorted_weeks[i]: all_sorted_weeks[i-1] for i in range(1, len(all_sorted_weeks))}
+if all_sorted_weeks:
+    week_to_prev_map[all_sorted_weeks[0]] = None
+
+# Bảng tra cứu lịch sử rủi ro toàn cục: (WEEK, MSSV) -> (RISK_LEVEL, TOTAL_ACTIVITY)
+history_risk_lookup = {}
+df_history_source = df_clean[df_clean["TAG_CODE"] == "H1"] if scope_option.startswith("Chỉ phân tích Tag H1") else df_clean
+for _, r_look in df_history_source.iterrows():
+    history_risk_lookup[(r_look["WEEK"], r_look["MSSV"])] = (
+        str(r_look.get("RISK_LEVEL", "")).upper(),
+        int(r_look.get("TOTAL_ACTIVITY", 0))
+    )
 
 # Hàm gán nhãn chuyển biến thực tế
-def determine_recovery_status(row, df_prev):
-    if df_prev is None:
+def determine_recovery_status(row, forced_prev_week=None):
+    curr_w = row.get("WEEK", "")
+    target_prev_w = forced_prev_week if forced_prev_week else week_to_prev_map.get(curr_w)
+    if not target_prev_w:
         return "⚪ Tuần đầu tiên (Chưa có tuần đối soát)"
+    
     mssv = row.get("MSSV", "")
-    if mssv not in df_prev.index:
+    if (target_prev_w, mssv) not in history_risk_lookup:
         return "⚪ Học viên mới cập nhật"
     
-    prev_row = df_prev.loc[mssv]
-    if isinstance(prev_row, pd.DataFrame):
-        prev_row = prev_row.iloc[0]
-        
-    p_risk = str(prev_row.get("RISK_LEVEL", "")).upper()
+    p_risk, _ = history_risk_lookup[(target_prev_w, mssv)]
     c_risk = str(row.get("RISK_LEVEL", "")).upper()
     c_act = int(row.get("TOTAL_ACTIVITY", 0))
 
@@ -478,10 +483,15 @@ def determine_recovery_status(row, df_prev):
 # Gắn cột Chuyển biến học tập và Lịch sử Action tuần trước vào df_deep
 if not df_deep.empty:
     df_deep["CHUYỂN_BIẾN_TUẦN_NÀY"] = df_deep.apply(
-        lambda r: determine_recovery_status(r, df_prev_lookup), axis=1
+        lambda r: determine_recovery_status(r, prev_week_name if selected_week != "Tất cả tuần trong Quý" else None), axis=1
     )
-    df_deep["ACTION_TUẦN_TRƯỚC"] = df_deep["MSSV"].apply(
-        lambda mssv: get_previous_action_note(notes_db, mssv, prev_week_name)
+    df_deep["ACTION_TUẦN_TRƯỚC"] = df_deep.apply(
+        lambda r: get_previous_action_note(
+            notes_db, 
+            r.get("MSSV", ""), 
+            prev_week_name if selected_week != "Tất cả tuần trong Quý" else week_to_prev_map.get(r.get("WEEK", ""))
+        ), 
+        axis=1
     )
 else:
     df_deep["CHUYỂN_BIẾN_TUẦN_NÀY"] = "N/A"
@@ -1395,20 +1405,24 @@ with tab5:
     st.subheader(f"🚨 Action Board Đối Soát Chuyển Biến Học Viên H1 Nguy Cơ Cao {f'({prev_week_name} ➔ {selected_week})' if prev_week_name else ''}")
     st.caption("Tự động hiển thị **Action tuần trước**, đo lường **Chuyển biến học tập thực tế tuần này** và cho phép cập nhật **Action tuần mới**.")
 
-    # Lọc học viên H1 nguy cơ cao (HIGH & CRITICAL)
-    df_urgent_h1 = df_deep[df_deep["RISK_LEVEL"].isin(["HIGH", "CRITICAL"])].copy()
+    # Lọc học viên H1 nguy cơ cao (HIGH & CRITICAL) HOẶC học viên có chuyển biến đối soát
+    target_recovery_keywords = "Đã cải thiện|Vẫn bất động|Mới phát sinh"
+    df_urgent_h1 = df_deep[
+        (df_deep["RISK_LEVEL"].isin(["HIGH", "CRITICAL"])) |
+        (df_deep["CHUYỂN_BIẾN_TUẦN_NÀY"].str.contains(target_recovery_keywords, na=False))
+    ].copy()
 
     if df_urgent_h1.empty:
-        st.success("🎉 Xuất sắc! Không có học viên H1 nào ở mức HIGH hoặc CRITICAL trong phạm vi bộ lọc này.")
+        st.success("🎉 Xuất sắc! Không có học viên H1 nào cần theo dõi chuyển biến trong phạm vi bộ lọc này.")
     else:
-        # Thống kê nhanh chuyển biến của nhóm High/Critical
+        # Thống kê nhanh chuyển biến của nhóm cần theo dõi
         cnt_recov = len(df_urgent_h1[df_urgent_h1["CHUYỂN_BIẾN_TUẦN_NÀY"].str.contains("Đã cải thiện", na=False)])
         cnt_stag = len(df_urgent_h1[df_urgent_h1["CHUYỂN_BIẾN_TUẦN_NÀY"].str.contains("Vẫn bất động", na=False)])
         cnt_new = len(df_urgent_h1[df_urgent_h1["CHUYỂN_BIẾN_TUẦN_NÀY"].str.contains("Mới phát sinh", na=False)])
 
         k1, k2, k3 = st.columns(3)
         with k1:
-            st.metric("🟢 ĐÃ CẢI THIỆN / CÓ HỌC LẠI", f"{cnt_recov} HV", help="Học viên đã bắt đầu có hoạt động học tập sau khi được can thiệp")
+            st.metric("🟢 ĐÃ CẢI THIỆN / CÓ HỌC LẠI", f"{cnt_recov} HV", help="Học viên tuần trước nguy cơ cao nhưng tuần này đã bắt đầu có hoạt động học tập / giảm rủi ro")
         with k2:
             st.metric("🔴 VẪN BẤT ĐỘNG (CHƯA CHUYỂN BIẾN)", f"{cnt_stag} HV", delta="- Cần can thiệp cấp cao", delta_color="inverse", help="Học viên vẫn chưa có hoạt động nào trong tuần này")
         with k3:
@@ -1445,93 +1459,101 @@ with tab5:
                 df_filtered_act["FULL_NAME"].str.lower().str.contains(q_a, na=False)
             ]
 
-        # Gắn dữ liệu ghi chú tuần hiện tại đã lưu
-        curr_notes = []
-        curr_statuses = []
-        for _, r in df_filtered_act.iterrows():
-            key_curr = f"{selected_week}_{r.get('MSSV', '')}"
-            saved = notes_db.get(key_curr, {})
-            curr_notes.append(saved.get("note", ""))
-            curr_statuses.append(saved.get("status", "Chưa liên hệ"))
+        if df_filtered_act.empty:
+            st.info("ℹ️ Không tìm thấy học viên nào phù hợp với bộ lọc chuyển biến đã chọn.")
+        else:
+            df_filtered_act = df_filtered_act.reset_index(drop=True)
 
-        df_filtered_act["Trạng thái xử lý tuần này"] = curr_statuses
-        df_filtered_act["Ghi chú Action tuần này"] = curr_notes
+            # Gắn dữ liệu ghi chú tuần hiện tại đã lưu
+            curr_notes = []
+            curr_statuses = []
+            for _, r in df_filtered_act.iterrows():
+                target_w = r.get("WEEK", selected_week) if selected_week == "Tất cả tuần trong Quý" else selected_week
+                key_curr = f"{target_w}_{r.get('MSSV', '')}"
+                saved = notes_db.get(key_curr, {})
+                curr_notes.append(saved.get("note", ""))
+                curr_statuses.append(saved.get("status", "Chưa liên hệ"))
 
-        action_cols = [
-            "WEEK", "MSSV", "FULL_NAME", "HANNAH", "MÔN_ĐANG_HỌC",
-            "CHUYỂN_BIẾN_TUẦN_NÀY", "ACTION_TUẦN_TRƯỚC",
-            "INACTIVITY_WEEKS", "ROOT_CAUSE", "ACTION_SUGGESTION",
-            "Trạng thái xử lý tuần này", "Ghi chú Action tuần này"
-        ]
-        valid_action_cols = [c for c in action_cols if c in df_filtered_act.columns]
+            df_filtered_act["Trạng thái xử lý tuần này"] = curr_statuses
+            df_filtered_act["Ghi chú Action tuần này"] = curr_notes
 
-        edited_h1_board = st.data_editor(
-            df_filtered_act[valid_action_cols],
-            key="h1_urgent_action_editor_v2",
-            use_container_width=True,
-            hide_index=True,
-            column_config={
-                "WEEK": st.column_config.TextColumn("Tuần", disabled=True, width="small"),
-                "MSSV": st.column_config.TextColumn("MSSV", disabled=True, width="small"),
-                "FULL_NAME": st.column_config.TextColumn("Họ và Tên", disabled=True, width="medium"),
-                "HANNAH": st.column_config.TextColumn("Hannah", disabled=True, width="small"),
-                "MÔN_ĐANG_HỌC": st.column_config.TextColumn("Môn", disabled=True, width="small"),
-                "CHUYỂN_BIẾN_TUẦN_NÀY": st.column_config.TextColumn("Chuyển Biến Tuần Này (vs Tuần Trước)", disabled=True, width="medium"),
-                "ACTION_TUẦN_TRƯỚC": st.column_config.TextColumn("Lịch Sử Action Tuần Trước", disabled=True, width="large"),
-                "INACTIVITY_WEEKS": st.column_config.NumberColumn("Số Tuần Dừng", disabled=True, width="small"),
-                "ROOT_CAUSE": st.column_config.TextColumn("Nguyên Nhân Cốt Lõi", disabled=True, width="medium"),
-                "ACTION_SUGGESTION": st.column_config.TextColumn("Gợi Ý Can Thiệp", disabled=True, width="medium"),
-                "Trạng thái xử lý tuần này": st.column_config.SelectboxColumn(
-                    "Trạng thái xử lý tuần này",
-                    options=[
-                        "Chưa liên hệ",
-                        "Đang gọi điện",
-                        "Đã nhắn tin Zalo",
-                        "Đã kết nối lại",
-                        "Hẹn lịch Mentor",
-                        "Báo phụ huynh / BQL",
-                        "Đã giải quyết"
-                    ],
-                    required=True,
-                    width="medium"
-                ),
-                "Ghi chú Action tuần này": st.column_config.TextColumn(
-                    "Ghi chú Action tuần này",
-                    help="Gõ chi tiết kết quả liên hệ hoặc cam kết của học viên",
-                    width="large"
-                )
-            }
-        )
+            action_cols = [
+                "WEEK", "MSSV", "FULL_NAME", "HANNAH", "MÔN_ĐANG_HỌC",
+                "CHUYỂN_BIẾN_TUẦN_NÀY", "ACTION_TUẦN_TRƯỚC",
+                "INACTIVITY_WEEKS", "ROOT_CAUSE", "ACTION_SUGGESTION",
+                "Trạng thái xử lý tuần này", "Ghi chú Action tuần này"
+            ]
+            valid_action_cols = [c for c in action_cols if c in df_filtered_act.columns]
 
-        col_s1, col_s2 = st.columns([1, 4])
-        with col_s1:
-            if st.button("💾 Lưu Action Notes Tuần Này", type="primary"):
-                saved_count = 0
-                for _, row in edited_h1_board.iterrows():
-                    key = f"{selected_week}_{row.get('MSSV', '')}"
-                    notes_db[key] = {
-                        "note": row.get("Ghi chú Action tuần này", ""),
-                        "status": row.get("Trạng thái xử lý tuần này", "Chưa liên hệ"),
-                        "hannah": row.get("HANNAH", ""),
-                        "student_name": row.get("FULL_NAME", ""),
-                        "recovery_status": row.get("CHUYỂN_BIẾN_TUẦN_NÀY", "")
-                    }
-                    saved_count += 1
-                if save_notes_db(notes_db):
-                    st.success(f"✅ Đã lưu thành công ghi chú cho {saved_count} học viên!")
-
-        with col_s2:
-            excel_act_buf = io.BytesIO()
-            with pd.ExcelWriter(excel_act_buf, engine="openpyxl") as writer:
-                edited_h1_board.to_excel(writer, sheet_name="Hannah_Action_H1", index=False)
-            excel_act_bytes = excel_act_buf.getvalue()
-
-            st.download_button(
-                label="📥 Xuất Báo Cáo Action H1 Kèm Đối Soát (Excel)",
-                data=excel_act_bytes,
-                file_name=f"Hannah_Action_H1_DoiSoat_{selected_week if selected_week != 'Tất cả tuần trong Quý' else selected_quarter}.xlsx",
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            editor_safe_key = f"h1_action_editor_{str(selected_week).replace(' ', '_')}"
+            edited_h1_board = st.data_editor(
+                df_filtered_act[valid_action_cols],
+                key=editor_safe_key,
+                use_container_width=True,
+                hide_index=True,
+                column_config={
+                    "WEEK": st.column_config.TextColumn("Tuần", disabled=True, width="small"),
+                    "MSSV": st.column_config.TextColumn("MSSV", disabled=True, width="small"),
+                    "FULL_NAME": st.column_config.TextColumn("Họ và Tên", disabled=True, width="medium"),
+                    "HANNAH": st.column_config.TextColumn("Hannah", disabled=True, width="small"),
+                    "MÔN_ĐANG_HỌC": st.column_config.TextColumn("Môn", disabled=True, width="small"),
+                    "CHUYỂN_BIẾN_TUẦN_NÀY": st.column_config.TextColumn("Chuyển Biến Tuần Này (vs Tuần Trước)", disabled=True, width="medium"),
+                    "ACTION_TUẦN_TRƯỚC": st.column_config.TextColumn("Lịch Sử Action Tuần Trước", disabled=True, width="large"),
+                    "INACTIVITY_WEEKS": st.column_config.NumberColumn("Số Tuần Dừng", disabled=True, width="small"),
+                    "ROOT_CAUSE": st.column_config.TextColumn("Nguyên Nhân Cốt Lõi", disabled=True, width="medium"),
+                    "ACTION_SUGGESTION": st.column_config.TextColumn("Gợi Ý Can Thiệp", disabled=True, width="medium"),
+                    "Trạng thái xử lý tuần này": st.column_config.SelectboxColumn(
+                        "Trạng thái xử lý tuần này",
+                        options=[
+                            "Chưa liên hệ",
+                            "Đang gọi điện",
+                            "Đã nhắn tin Zalo",
+                            "Đã kết nối lại",
+                            "Hẹn lịch Mentor",
+                            "Báo phụ huynh / BQL",
+                            "Đã giải quyết"
+                        ],
+                        required=True,
+                        width="medium"
+                    ),
+                    "Ghi chú Action tuần này": st.column_config.TextColumn(
+                        "Ghi chú Action tuần này",
+                        help="Gõ chi tiết kết quả liên hệ hoặc cam kết của học viên",
+                        width="large"
+                    )
+                }
             )
+
+            col_s1, col_s2 = st.columns([1, 4])
+            with col_s1:
+                if st.button("💾 Lưu Action Notes Tuần Này", type="primary"):
+                    saved_count = 0
+                    for _, row in edited_h1_board.iterrows():
+                        target_row_w = row.get("WEEK", selected_week) if selected_week == "Tất cả tuần trong Quý" else selected_week
+                        key = f"{target_row_w}_{row.get('MSSV', '')}"
+                        notes_db[key] = {
+                            "note": row.get("Ghi chú Action tuần này", ""),
+                            "status": row.get("Trạng thái xử lý tuần này", "Chưa liên hệ"),
+                            "hannah": row.get("HANNAH", ""),
+                            "student_name": row.get("FULL_NAME", ""),
+                            "recovery_status": row.get("CHUYỂN_BIẾN_TUẦN_NÀY", "")
+                        }
+                        saved_count += 1
+                    if save_notes_db(notes_db):
+                        st.success(f"✅ Đã lưu thành công ghi chú cho {saved_count} học viên!")
+
+            with col_s2:
+                excel_act_buf = io.BytesIO()
+                with pd.ExcelWriter(excel_act_buf, engine="openpyxl") as writer:
+                    edited_h1_board.to_excel(writer, sheet_name="Hannah_Action_H1", index=False)
+                excel_act_bytes = excel_act_buf.getvalue()
+
+                st.download_button(
+                    label="📥 Xuất Báo Cáo Action H1 Kèm Đối Soát (Excel)",
+                    data=excel_act_bytes,
+                    file_name=f"Hannah_Action_H1_DoiSoat_{selected_week if selected_week != 'Tất cả tuần trong Quý' else selected_quarter}.xlsx",
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                )
 
     st.markdown("---")
     st.subheader("📋 Tra Cứu Toàn Bộ Học Viên H1")
