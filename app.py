@@ -556,7 +556,7 @@ risk_color_map = {"LOW": "#28a745", "MEDIUM": "#ffc107", "HIGH": "#fd7e14", "CRI
 
 # ==================== 6 TABS GIAO DIỆN CHÍNH ====================
 tab0, tab1, tab2, tab3, tab4, tab5 = st.tabs([
-    "🎯 0. Báo Cáo Lãnh Đạo & KPI Điều Hành",
+    "🎯 0. Báo Cáo KPI TEAM HANNAH",
     "📌 1. Tổng Quan Quy Mô & Phân Bổ Tag",
     "🎯 2. Tiến Độ & Danh Sách Push Hoàn Thành (H1)",
     "👩‍💼 3. Hiệu Suất & Tỷ Lệ Cứu Nguy Hannah (H1)",
@@ -565,11 +565,11 @@ tab0, tab1, tab2, tab3, tab4, tab5 = st.tabs([
 ])
 
 # =========================================================================
-# TAB 0: BÁO CÁO LÃNH ĐẠO & KPI ĐIỀU HÀNH (EXECUTIVE DASHBOARD)
+# TAB 0: Báo Cáo KPI TEAM HANNAH (EXECUTIVE DASHBOARD)
 # =========================================================================
 with tab0:
     period_title = selected_week if selected_week != "Tất cả tuần trong Quý" else selected_quarter
-    st.subheader(f"🎯 Báo Cáo Điều Hành Dành Cho Lãnh Đạo & Ban Giám Đốc ({period_title})")
+    st.subheader(f"🎯 Báo Cáo KPI ({period_title})")
     st.caption("Tổng hợp **Bộ 5 Chỉ Số KPI Chiến Lược**, đo lường **Benchmark Thực tế vs Mục tiêu** và Bảng danh sách **Học viên Rủi ro cần Can thiệp Cấp cao**.")
 
     # --- TÍNH TOÁN CÁC CHỈ SỐ KPI ĐIỀU HÀNH ---
@@ -658,7 +658,7 @@ with tab0:
     team_recov_rate = (recov_cnt / (recov_cnt + stag_cnt) * 100) if (recov_cnt + stag_cnt) > 0 else 0.0
 
     # --- HIỂN THỊ HÀNG METRIC CARDS ĐIỀU HÀNH ---
-    st.markdown("### 🏆 Bảng Điểm Benchmark KPI Lãnh Đạo")
+    st.markdown("### 🏆 Bảng Benchmark KPI")
 
     m1, m2, m3, m4, m5, m6 = st.columns(6)
 
