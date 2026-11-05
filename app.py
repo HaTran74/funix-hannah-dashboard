@@ -574,7 +574,7 @@ with tab0:
 
     # --- TÍNH TOÁN CÁC CHỈ SỐ KPI ĐIỀU HÀNH ---
     # 1. Học viên Tag H1
-    df_h1_tab0 = df_base[df_base["TAG_CODE"] == "H1"].copy()
+    df_h1_tab0 = df_deep[df_deep["TAG_CODE"] == "H1"].copy() if "TAG_CODE" in df_deep.columns else df_deep.copy()
     tot_h1_kpi = len(df_h1_tab0)
 
     # KPI 1: Tỷ lệ Active tuần H1 (Target >= 70%)
