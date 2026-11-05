@@ -519,22 +519,23 @@ def determine_recovery_status(row, forced_prev_week=None):
         else:
             return "✅ Duy trì học tập an toàn"
 
-# Gắn cột Chuyển biến học tập và Lịch sử Action tuần trước vào df_deep
-if not df_deep.empty:
-    df_deep["CHUYỂN_BIẾN_TUẦN_NÀY"] = df_deep.apply(
-        lambda r: determine_recovery_status(r, prev_week_name if selected_week != "Tất cả tuần trong Quý" else None), axis=1
-    )
-    df_deep["ACTION_TUẦN_TRƯỚC"] = df_deep.apply(
-        lambda r: get_previous_action_note(
-            notes_db, 
-            r.get("MSSV", ""), 
-            prev_week_name if selected_week != "Tất cả tuần trong Quý" else week_to_prev_map.get(r.get("WEEK", ""))
-        ), 
-        axis=1
-    )
-else:
-    df_deep["CHUYỂN_BIẾN_TUẦN_NÀY"] = "N/A"
-    df_deep["ACTION_TUẦN_TRƯỚC"] = "N/A"
+# Gắn cột Chuyển biến học tập và Lịch sử Action tuần trước vào df_base và df_deep
+for df_target in [df_base, df_deep]:
+    if not df_target.empty:
+        df_target["CHUYỂN_BIẾN_TUẦN_NÀY"] = df_target.apply(
+            lambda r: determine_recovery_status(r, prev_week_name if selected_week != "Tất cả tuần trong Quý" else None), axis=1
+        )
+        df_target["ACTION_TUẦN_TRƯỚC"] = df_target.apply(
+            lambda r: get_previous_action_note(
+                notes_db, 
+                r.get("MSSV", ""), 
+                prev_week_name if selected_week != "Tất cả tuần trong Quý" else week_to_prev_map.get(r.get("WEEK", ""))
+            ), 
+            axis=1
+        )
+    else:
+        df_target["CHUYỂN_BIẾN_TUẦN_NÀY"] = "N/A"
+        df_target["ACTION_TUẦN_TRƯỚC"] = "N/A"
 
 # ==================== BANNER LÀM RÕ CHU TRÌNH ĐO LƯỜNG ACTION ====================
 with st.expander("💡 **HƯỚNG DẪN: CƠ CHẾ ĐO LƯỜNG ACTION W41 ➔ W42 (CLOSED-LOOP TRACKING)** — Nhấp để xem", expanded=False):
