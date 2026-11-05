@@ -380,11 +380,22 @@ st.caption("Giám sát Quy mô Học viên, Quản trị Tiến độ Tag H1 & V
 # ==================== SIDEBAR: BỘ LỌC DỮ LIỆU ====================
 st.sidebar.header("⚙️ Nguồn Dữ Liệu Real-Time")
 
-col_rf1, col_rf2 = st.sidebar.columns([3, 2])
+col_rf1, col_rf2 = st.sidebar.columns([1, 1])
 with col_rf1:
-    if st.button("🔄 Làm mới dữ liệu", help="Cập nhật trực tiếp dữ liệu mới nhất từ Google Sheets"):
+    if st.button("🔄 Làm mới", help="Cập nhật trực tiếp dữ liệu mới nhất từ Google Sheets"):
         st.cache_data.clear()
         st.rerun()
+with col_rf2:
+    if st.button("🚀 Push Git", help="Đẩy code app.py lên GitHub Repository"):
+        try:
+            from sync_github import sync_to_github
+            with st.spinner("Đang đẩy lên GitHub..."):
+                if sync_to_github("Update app.py via Dashboard button"):
+                    st.sidebar.success("✅ Đã push Git thành công!")
+                else:
+                    st.sidebar.error("❌ Chưa cấu hình Token hoặc lỗi kết nối.")
+        except Exception as e:
+            st.sidebar.error(f"Lỗi: {e}")
 
 with st.spinner("Đang tải dữ liệu từ Google Sheets Master Data & Survey..."):
     df_raw, load_err = load_data_from_google_sheet(MASTER_DATA_SHEET_ID, TARGET_SHEET_NAME)
