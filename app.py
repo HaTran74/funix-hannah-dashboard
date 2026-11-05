@@ -664,7 +664,7 @@ with tab0:
 
     with m1:
         st.metric(
-            label="1. Active H1 (Tuần)",
+            label="1. Activity (Tuần)",
             value=f"{act_h1_pct:.1f}%",
             delta=f"{diff_act:+.1f}% vs Target 70%",
             delta_color="normal" if diff_act >= 0 else "inverse",
@@ -672,7 +672,7 @@ with tab0:
         )
     with m2:
         st.metric(
-            label="2. Tiến Độ Tuần (H1)",
+            label="2. Tiến Độ Học Tập Tuần (H1)",
             value=f"{prog_h1_pct:.1f}%",
             delta=f"{diff_prog:+.1f}% vs Target >= 3%",
             delta_color="normal" if diff_prog >= 0 else "inverse",
