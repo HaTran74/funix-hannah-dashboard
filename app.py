@@ -649,8 +649,12 @@ with tab0:
 
     # KPI 5: Quy mô & Cứu nguy
     urgent_cnt = (df_h1_tab0["RISK_LEVEL"].isin(["HIGH", "CRITICAL"])).sum() if tot_h1_kpi > 0 else 0
-    recov_cnt = len(df_h1_tab0[df_h1_tab0["CHUYỂN_BIẾN_TUẦN_NÀY"].str.contains("Đã cải thiện", na=False)])
-    stag_cnt = len(df_h1_tab0[df_h1_tab0["CHUYỂN_BIẾN_TUẦN_NÀY"].str.contains("Vẫn bất động", na=False)])
+    if "CHUYỂN_BIẾN_TUẦN_NÀY" in df_h1_tab0.columns:
+        recov_cnt = len(df_h1_tab0[df_h1_tab0["CHUYỂN_BIẾN_TUẦN_NÀY"].str.contains("Đã cải thiện", na=False)])
+        stag_cnt = len(df_h1_tab0[df_h1_tab0["CHUYỂN_BIẾN_TUẦN_NÀY"].str.contains("Vẫn bất động", na=False)])
+    else:
+        recov_cnt = 0
+        stag_cnt = 0
     team_recov_rate = (recov_cnt / (recov_cnt + stag_cnt) * 100) if (recov_cnt + stag_cnt) > 0 else 0.0
 
     # --- HIỂN THỊ HÀNG METRIC CARDS ĐIỀU HÀNH ---
