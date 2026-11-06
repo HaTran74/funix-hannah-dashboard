@@ -556,7 +556,7 @@ risk_color_map = {"LOW": "#28a745", "MEDIUM": "#ffc107", "HIGH": "#fd7e14", "CRI
 
 # ==================== 6 TABS GIAO DIỆN CHÍNH ====================
 tab0, tab1, tab2, tab3, tab4, tab5 = st.tabs([
-    "🎯 0. Báo Cáo KPI TEAM HANNAH",
+    "🎯 0. Báo Cáo Lãnh Đạo & KPI Điều Hành",
     "📌 1. Tổng Quan Quy Mô & Phân Bổ Tag",
     "🎯 2. Tiến Độ & Danh Sách Push Hoàn Thành (H1)",
     "👩‍💼 3. Hiệu Suất & Tỷ Lệ Cứu Nguy Hannah (H1)",
@@ -565,11 +565,11 @@ tab0, tab1, tab2, tab3, tab4, tab5 = st.tabs([
 ])
 
 # =========================================================================
-# TAB 0: Báo Cáo KPI TEAM HANNAH (EXECUTIVE DASHBOARD)
+# TAB 0: BÁO CÁO LÃNH ĐẠO & KPI ĐIỀU HÀNH (EXECUTIVE DASHBOARD)
 # =========================================================================
 with tab0:
     period_title = selected_week if selected_week != "Tất cả tuần trong Quý" else selected_quarter
-    st.subheader(f"🎯 Báo Cáo KPI ({period_title})")
+    st.subheader(f"🎯 Báo Cáo Điều Hành Dành Cho Lãnh Đạo & Ban Giám Đốc ({period_title})")
     st.caption("Tổng hợp **Bộ 5 Chỉ Số KPI Chiến Lược**, đo lường **Benchmark Thực tế vs Mục tiêu** và Bảng danh sách **Học viên Rủi ro cần Can thiệp Cấp cao**.")
 
     # --- TÍNH TOÁN CÁC CHỈ SỐ KPI ĐIỀU HÀNH ---
@@ -657,132 +657,102 @@ with tab0:
         stag_cnt = 0
     team_recov_rate = (recov_cnt / (recov_cnt + stag_cnt) * 100) if (recov_cnt + stag_cnt) > 0 else 0.0
 
-    # --- HIỂN THỊ HÀNG METRIC CARDS ĐIỀU HÀNH ---
-    st.markdown("### 🏆 Bảng Benchmark KPI")
+    # =========================================================================
+    # PHẦN 1: BỘ 3 CHỈ SỐ CỐT LÕI (ACTIVITY, TIẾN ĐỘ HỌC TẬP & SỰ HÀI LÒNG)
+    # =========================================================================
+    st.markdown("### 🏆 1. Tương Tác, Tiến Độ Học Thuật & Mức Độ Hài Lòng")
+    st.caption("Bộ 3 chỉ số then chốt theo dõi nhịp học tập hàng tuần của học viên Tag H1 và chất lượng dịch vụ đào tạo theo Quý.")
 
-    m1, m2, m3, m4, m5, m6 = st.columns(6)
+    k1, k2, k3 = st.columns(3)
 
-    with m1:
+    with k1:
         st.metric(
-            label="1. Activity (Tuần)",
+            label="⚡ 1. Activity Tuần (Tag H1)",
             value=f"{act_h1_pct:.1f}%",
             delta=f"{diff_act:+.1f}% vs Target 70%",
             delta_color="normal" if diff_act >= 0 else "inverse",
-            help=f"Thực tế: {act_h1_cnt}/{tot_h1_kpi} học viên có Activity > 0. Mục tiêu: >= 70%."
+            help=f"Thực tế: {act_h1_cnt}/{tot_h1_kpi} học viên có Activity > 0 trong tuần. Mục tiêu: >= 70%."
         )
-    with m2:
+        if act_h1_pct >= target_act:
+            st.success("🟢 Đạt chỉ tiêu tương tác tuần")
+        else:
+            st.warning(f"🔴 Thiếu {target_act - act_h1_pct:.1f}% để đạt chuẩn 70%")
+
+    with k2:
         st.metric(
-            label="2. Tiến Độ Học Tập Tuần (H1)",
+            label="📚 2. Tiến Độ Học Thuật Tuần (Tag H1)",
             value=f"{prog_h1_pct:.1f}%",
             delta=f"{diff_prog:+.1f}% vs Target >= 3%",
             delta_color="normal" if diff_prog >= 0 else "inverse",
-            help=f"Thực tế: {prog_h1_cnt}/{tot_h1_kpi} HV có làm bài Quiz / Lab / ASM / FE tuần này. Mục tiêu: >= 3%."
+            help=f"Thực tế: {prog_h1_cnt}/{tot_h1_kpi} học viên có nộp sản phẩm đánh giá (Quiz / Lab / ASM / PT / FE) tuần này. Mục tiêu: >= 3%."
         )
-    with m3:
-        diff_g1 = pct_g1 - target_g1
-        st.metric(
-            label="3. Khóa Ngắn (<1T)",
-            value=f"{pct_g1:.1f}%",
-            delta=f"{diff_g1:+.1f}% vs Target 70%",
-            delta_color="normal" if diff_g1 >= 0 else "inverse",
-            help=f"Học viên On-Track / Hoàn thành: {on_track_g1}/{tot_g1} HV. Target: 70%."
-        )
-    with m4:
-        diff_g2 = pct_g2 - target_g2
-        st.metric(
-            label="4. Khóa Trung (1-12T)",
-            value=f"{pct_g2:.1f}%",
-            delta=f"{diff_g2:+.1f}% vs Target 50%",
-            delta_color="normal" if diff_g2 >= 0 else "inverse",
-            help=f"Học viên On-Track / Hoàn thành: {on_track_g2}/{tot_g2} HV. Target: 50%."
-        )
-    with m5:
-        diff_g3 = pct_g3 - target_g3
-        st.metric(
-            label="5. Khóa Dài (≥12T)",
-            value=f"{pct_g3:.1f}%",
-            delta=f"{diff_g3:+.1f}% vs Target 30%",
-            delta_color="normal" if diff_g3 >= 0 else "inverse",
-            help=f"Học viên On-Track / Hoàn thành: {on_track_g3}/{tot_g3} HV. Target: 30%."
-        )
-    with m6:
+        if prog_h1_pct >= target_prog:
+            st.success(f"🟢 Đạt chuẩn tiến độ ({prog_h1_cnt} HV có nộp bài/thi tuần này)")
+        else:
+            st.error(f"🔴 Cảnh báo: Tỷ lệ nộp bài dưới ngưỡng 3%")
+
+    with k3:
         if csat_pct is not None:
             diff_csat = csat_pct - 75.0
             st.metric(
-                label="6. Hài Lòng (CSAT)",
+                label="⭐ 3. Tỷ Lệ Hài Lòng (CSAT Quý)",
                 value=f"{csat_pct:.1f}%",
                 delta=f"{diff_csat:+.1f}% vs Target 75%",
                 delta_color="normal" if diff_csat >= 0 else "inverse",
-                help=f"Dựa trên {survey_resp_cnt} phản hồi khảo sát Quý. Hài lòng Hannah: {csat_hannah_pct:.1f}%."
+                help=f"Dựa trên {survey_resp_cnt} phản hồi khảo sát trong Quý. Hài lòng riêng về Hannah: {csat_hannah_pct:.1f}%."
             )
+            if csat_pct >= 75.0:
+                st.success(f"🟢 Vượt chuẩn chất lượng ({csat_pct:.1f}% hài lòng)")
+            else:
+                st.warning(f"🟡 Cần cải thiện trải nghiệm học tập")
         else:
             st.metric(
-                label="6. Hài Lòng (CSAT)",
+                label="⭐ 3. Tỷ Lệ Hài Lòng (CSAT Quý)",
                 value="N/A",
-                delta="Chưa có survey"
+                delta="Đang cập nhật survey"
             )
+            st.info("ℹ️ Đang chờ dữ liệu khảo sát Quý")
 
-    st.markdown("---")
+    # Biểu đồ so sánh 3 chỉ số cốt lõi vs Benchmark
+    c_core1, c_core2 = st.columns([3, 2])
 
-    # --- KHỐI BIỂU ĐỒ SO SÁNH THỰC TẾ VS BENCHMARK ---
-    st.markdown("### 📊 Đo Lường Trực Quan: Thực Tế vs Benchmark Mục Tiêu")
-    c_chart1, c_chart2 = st.columns([3, 2])
-
-    with c_chart1:
-        kpi_compare_data = [
-            {"CHỈ SỐ": "1. Active H1 (Tuần)", "THỰC TẾ (%)": round(act_h1_pct, 1), "BENCHMARK (%)": target_act, "KẾT QUẢ": "ĐẠT CHUẨN" if act_h1_pct >= target_act else "CHƯA ĐẠT"},
-            {"CHỈ SỐ": "2. Tiến Độ Tuần (H1)", "THỰC TẾ (%)": round(prog_h1_pct, 1), "BENCHMARK (%)": target_prog, "KẾT QUẢ": "ĐẠT CHUẨN" if prog_h1_pct >= target_prog else "CHƯA ĐẠT"},
-            {"CHỈ SỐ": "3. Khóa Ngắn (<1T)", "THỰC TẾ (%)": round(pct_g1, 1), "BENCHMARK (%)": target_g1, "KẾT QUẢ": "ĐẠT CHUẨN" if pct_g1 >= target_g1 else "CHƯA ĐẠT"},
-            {"CHỈ SỐ": "4. Khóa Trung (1-12T)", "THỰC TẾ (%)": round(pct_g2, 1), "BENCHMARK (%)": target_g2, "KẾT QUẢ": "ĐẠT CHUẨN" if pct_g2 >= target_g2 else "CHƯA ĐẠT"},
-            {"CHỈ SỐ": "5. Khóa Dài (≥12T)", "THỰC TẾ (%)": round(pct_g3, 1), "BENCHMARK (%)": target_g3, "KẾT QUẢ": "ĐẠT CHUẨN" if pct_g3 >= target_g3 else "CHƯA ĐẠT"}
+    with c_core1:
+        kpi_core_data = [
+            {"CHỈ SỐ": "1. Active H1 (Tuần)", "THỰC TẾ (%)": round(act_h1_pct, 1), "BENCHMARK (%)": target_act, "TRẠNG THÁI": "ĐẠT CHUẨN" if act_h1_pct >= target_act else "CHƯA ĐẠT"},
+            {"CHỈ SỐ": "2. Tiến Độ Tuần (H1)", "THỰC TẾ (%)": round(prog_h1_pct, 1), "BENCHMARK (%)": target_prog, "TRẠNG THÁI": "ĐẠT CHUẨN" if prog_h1_pct >= target_prog else "CHƯA ĐẠT"}
         ]
         if csat_pct is not None:
-            kpi_compare_data.append({
-                "CHỈ SỐ": "6. Hài Lòng CSAT", "THỰC TẾ (%)": round(csat_pct, 1), "BENCHMARK (%)": 75.0, "KẾT QUẢ": "ĐẠT CHUẨN" if csat_pct >= 75.0 else "CHƯA ĐẠT"
+            kpi_core_data.append({
+                "CHỈ SỐ": "3. Hài Lòng CSAT (Quý)", "THỰC TẾ (%)": round(csat_pct, 1), "BENCHMARK (%)": 75.0, "TRẠNG THÁI": "ĐẠT CHUẨN" if csat_pct >= 75.0 else "CHƯA ĐẠT"
             })
 
-        df_kpi_bar = pd.DataFrame(kpi_compare_data)
-        df_kpi_melt = df_kpi_bar.melt(
-            id_vars=["CHỈ SỐ", "KẾT QUẢ"],
+        df_core_bar = pd.DataFrame(kpi_core_data)
+        df_core_melt = df_core_bar.melt(
+            id_vars=["CHỈ SỐ", "TRẠNG THÁI"],
             value_vars=["THỰC TẾ (%)", "BENCHMARK (%)"],
             var_name="LOẠI",
             value_name="GIÁ_TRỊ"
         )
 
-        fig_kpi_bench = px.bar(
-            df_kpi_melt,
+        fig_core_bench = px.bar(
+            df_core_melt,
             x="CHỈ SỐ",
             y="GIÁ_TRỊ",
             color="LOẠI",
             barmode="group",
             text="GIÁ_TRỊ",
             color_discrete_map={"THỰC TẾ (%)": "#1f77b4", "BENCHMARK (%)": "#ff7f0e"},
-            height=350,
-            title="Đối Soát Thực Tế (%) vs Benchmark Mục Tiêu (%)"
+            height=290,
+            title="So Sánh 3 Chỉ Số Cốt Lõi: Thực Tế (%) vs Benchmark Mục Tiêu (%)"
         )
-        fig_kpi_bench.update_layout(
+        fig_core_bench.update_layout(
             margin=dict(l=10, r=10, t=35, b=10),
             legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
         )
-        st.plotly_chart(fig_kpi_bench, use_container_width=True)
+        st.plotly_chart(fig_core_bench, use_container_width=True)
 
-    with c_chart2:
-        df_course_status = df_base.groupby(["NHÓM_THỜI_LƯỢNG", "KHẢ_NĂNG_HOÀN_THÀNH"]).size().reset_index(name="SỐ_HV")
-        fig_course_status = px.bar(
-            df_course_status,
-            x="NHÓM_THỜI_LƯỢNG",
-            y="SỐ_HV",
-            color="KHẢ_NĂNG_HOÀN_THÀNH",
-            barmode="stack",
-            height=350,
-            title="Phân Bổ Tiến Độ Theo 3 Nhóm Thời Lượng Khóa Học"
-        )
-        fig_course_status.update_layout(margin=dict(l=10, r=10, t=35, b=10), showlegend=False)
-        st.plotly_chart(fig_course_status, use_container_width=True)
-
-    # Biểu đồ khảo sát dịch vụ (nếu có dữ liệu)
-    if df_survey_q is not None and not df_survey_q.empty:
-        with st.expander("📋 Xem Chi Tiết Khảo Sát Sự Hài Lòng Theo Mảng Dịch Vụ (CSAT Quý)", expanded=False):
+    with c_core2:
+        if df_survey_q is not None and not df_survey_q.empty:
             survey_services = {
                 "Hannah Phụ Trách": "2. Bạn đánh giá mức độ hài lòng đối với các dịch vụ dưới đây như thế nào? [Hannah]",
                 "Chương Trình Học": "2. Bạn đánh giá mức độ hài lòng đối với các dịch vụ dưới đây như thế nào? [Chương trình học]",
@@ -805,23 +775,235 @@ with tab0:
                         })
             if svc_res:
                 df_svc_table = pd.DataFrame(svc_res).sort_values("TỶ LỆ HÀI LÒNG (%)", ascending=False)
-                col_s1, col_s2 = st.columns([3, 2])
-                with col_s1:
-                    fig_svc = px.bar(
-                        df_svc_table,
-                        x="MẢNG DỊCH VỤ",
-                        y="TỶ LỆ HÀI LÒNG (%)",
-                        color="TỶ LỆ HÀI LÒNG (%)",
-                        color_continuous_scale="Teal",
-                        text="TỶ LỆ HÀI LÒNG (%)",
-                        height=280
-                    )
-                    fig_svc.update_layout(margin=dict(l=10, r=10, t=10, b=10))
-                    st.plotly_chart(fig_svc, use_container_width=True)
-                with col_s2:
-                    st.dataframe(df_svc_table, use_container_width=True, hide_index=True)
+                fig_svc = px.bar(
+                    df_svc_table,
+                    x="MẢNG DỊCH VỤ",
+                    y="TỶ LỆ HÀI LÒNG (%)",
+                    color="TỶ LỆ HÀI LÒNG (%)",
+                    color_continuous_scale="Teal",
+                    text="TỶ LỆ HÀI LÒNG (%)",
+                    height=290,
+                    title="Chi Tiết Hài Lòng Theo Mảng Dịch Vụ (Survey)"
+                )
+                fig_svc.update_layout(margin=dict(l=10, r=10, t=35, b=10))
+                st.plotly_chart(fig_svc, use_container_width=True)
+            else:
+                st.info("ℹ️ Chưa có dữ liệu mảng dịch vụ khảo sát")
+        else:
+            st.info("ℹ️ Đang chờ dữ liệu khảo sát Quý")
 
     st.markdown("---")
+
+    # =========================================================================
+    # PHẦN 2: TỶ LỆ HOÀN THÀNH MÔN THEO THỜI LƯỢNG KHÓA HỌC (NGẮN, TRUNG, DÀI)
+    # =========================================================================
+    st.markdown("### 🎯 2. Tỷ Lệ Hoàn Thành Môn Học Theo Nhóm Thời Lượng Khóa Đào Tạo")
+    st.caption("Đo lường tiến độ và tỷ lệ On-Track / Hoàn thành theo 3 phân khúc: **Khóa ngắn (< 1 tháng)**, **Khóa trung hạn (1 – < 12 tháng)**, và **Khóa dài hạn (≥ 12 tháng)**.")
+
+    # Tính toán chi tiết cho 3 nhóm
+    # Nhóm 1: Khóa ngắn (< 1 tháng) - Target 70%
+    df_g1 = df_base[df_base["NHÓM_THỜI_LƯỢNG"] == "1. Khóa ngắn (< 1 tháng)"]
+    tot_g1 = len(df_g1)
+    on_track_g1 = df_g1["KHẢ_NĂNG_HOÀN_THÀNH"].str.contains("On-Track|RẤT CAO|Đã hoàn thành", na=False).sum()
+    pct_g1 = (on_track_g1 / tot_g1 * 100) if tot_g1 > 0 else 0.0
+    avg_c_done_g1 = df_g1["TỶ_LỆ_XONG_MÔN"].mean() if tot_g1 > 0 else 0.0
+    target_g1 = 70.0
+    diff_g1 = pct_g1 - target_g1
+
+    # Nhóm 2: Khóa trung hạn (1 - < 12 tháng) - Target 50%
+    df_g2 = df_base[df_base["NHÓM_THỜI_LƯỢNG"] == "2. Khóa trung hạn (1 - < 12 tháng)"]
+    tot_g2 = len(df_g2)
+    on_track_g2 = df_g2["KHẢ_NĂNG_HOÀN_THÀNH"].str.contains("On-Track|RẤT CAO|Đã hoàn thành", na=False).sum()
+    pct_g2 = (on_track_g2 / tot_g2 * 100) if tot_g2 > 0 else 0.0
+    avg_c_done_g2 = df_g2["TỶ_LỆ_XONG_MÔN"].mean() if tot_g2 > 0 else 0.0
+    target_g2 = 50.0
+    diff_g2 = pct_g2 - target_g2
+
+    # Nhóm 3: Khóa dài hạn (>= 12 tháng) - Target 30%
+    df_g3 = df_base[df_base["NHÓM_THỜI_LƯỢNG"] == "3. Khóa dài hạn (≥ 12 tháng)"]
+    tot_g3 = len(df_g3)
+    on_track_g3 = df_g3["KHẢ_NĂNG_HOÀN_THÀNH"].str.contains("On-Track|RẤT CAO|Đã hoàn thành", na=False).sum()
+    pct_g3 = (on_track_g3 / tot_g3 * 100) if tot_g3 > 0 else 0.0
+    avg_c_done_g3 = df_g3["TỶ_LỆ_XONG_MÔN"].mean() if tot_g3 > 0 else 0.0
+    target_g3 = 30.0
+    diff_g3 = pct_g3 - target_g3
+
+    c1, c2, c3 = st.columns(3)
+
+    with c1:
+        st.metric(
+            label="⚡ Khóa Ngắn (< 1 Tháng)",
+            value=f"{pct_g1:.1f}%",
+            delta=f"{diff_g1:+.1f}% vs Target 70%",
+            delta_color="normal" if diff_g1 >= 0 else "inverse",
+            help=f"Tổng quy mô: {tot_g1} học viên. Đang On-Track/Hoàn thành: {on_track_g1} HV. Tỷ lệ xong môn TB: {avg_c_done_g1:.1f}%."
+        )
+        if pct_g1 >= target_g1:
+            st.success(f"🟢 Đạt Benchmark 70% ({on_track_g1}/{tot_g1} HV On-Track)")
+        else:
+            st.error(f"🔴 Chưa đạt ({on_track_g1}/{tot_g1} HV On-Track)")
+
+    with c2:
+        st.metric(
+            label="⏳ Khóa Trung Hạn (1 – < 12 Tháng)",
+            value=f"{pct_g2:.1f}%",
+            delta=f"{diff_g2:+.1f}% vs Target 50%",
+            delta_color="normal" if diff_g2 >= 0 else "inverse",
+            help=f"Tổng quy mô: {tot_g2} học viên. Đang On-Track/Hoàn thành: {on_track_g2} HV. Tỷ lệ xong môn TB: {avg_c_done_g2:.1f}%."
+        )
+        if pct_g2 >= target_g2:
+            st.success(f"🟢 Đạt Benchmark 50% ({on_track_g2}/{tot_g2} HV On-Track)")
+        else:
+            st.warning(f"🔴 Thiếu {target_g2 - pct_g2:.1f}% ({on_track_g2}/{tot_g2} HV On-Track)")
+
+    with c3:
+        st.metric(
+            label="🏛️ Khóa Dài Hạn (≥ 12 Tháng)",
+            value=f"{pct_g3:.1f}%",
+            delta=f"{diff_g3:+.1f}% vs Target 30%",
+            delta_color="normal" if diff_g3 >= 0 else "inverse",
+            help=f"Tổng quy mô: {tot_g3} học viên. Đang On-Track/Hoàn thành: {on_track_g3} HV. Tỷ lệ xong môn TB: {avg_c_done_g3:.1f}%."
+        )
+        if pct_g3 >= target_g3:
+            st.success(f"🟢 Đạt Benchmark 30% ({on_track_g3}/{tot_g3} HV On-Track)")
+        else:
+            st.warning(f"🟡 Thiếu {target_g3 - pct_g3:.1f}% ({on_track_g3}/{tot_g3} HV On-Track)")
+
+    # Biểu đồ và Bảng so sánh 3 nhóm khóa học
+    col_course_ch1, col_course_ch2 = st.columns([1, 1])
+
+    with col_course_ch1:
+        course_bench_data = [
+            {"NHÓM KHÓA": "Khóa Ngắn (< 1T)", "THỰC TẾ (%)": round(pct_g1, 1), "BENCHMARK (%)": target_g1},
+            {"NHÓM KHÓA": "Khóa Trung (1-12T)", "THỰC TẾ (%)": round(pct_g2, 1), "BENCHMARK (%)": target_g2},
+            {"NHÓM KHÓA": "Khóa Dài (≥ 12T)", "THỰC TẾ (%)": round(pct_g3, 1), "BENCHMARK (%)": target_g3}
+        ]
+        df_c_bench = pd.DataFrame(course_bench_data)
+        df_c_melt = df_c_bench.melt(
+            id_vars=["NHÓM KHÓA"],
+            value_vars=["THỰC TẾ (%)", "BENCHMARK (%)"],
+            var_name="LOẠI",
+            value_name="TỶ LỆ (%)"
+        )
+        fig_course_bench = px.bar(
+            df_c_melt,
+            x="NHÓM KHÓA",
+            y="TỶ LỆ (%)",
+            color="LOẠI",
+            barmode="group",
+            text="TỶ LỆ (%)",
+            color_discrete_map={"THỰC TẾ (%)": "#0ca678", "BENCHMARK (%)": "#f59f00"},
+            height=320,
+            title="So Sánh Tỷ Lệ On-Track / Hoàn Thành Thực Tế vs Benchmark Target"
+        )
+        fig_course_bench.update_layout(
+            margin=dict(l=10, r=10, t=35, b=10),
+            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
+        )
+        st.plotly_chart(fig_course_bench, use_container_width=True)
+
+    with col_course_ch2:
+        df_status_summary = df_base.groupby(["NHÓM_THỜI_LƯỢNG", "KHẢ_NĂNG_HOÀN_THÀNH"]).size().reset_index(name="SỐ_HV")
+        fig_course_status = px.bar(
+            df_status_summary,
+            x="NHÓM_THỜI_LƯỢNG",
+            y="SỐ_HV",
+            color="KHẢ_NĂNG_HOÀN_THÀNH",
+            barmode="stack",
+            height=320,
+            title="Cơ Cấu Trạng Thái Tiến Độ Học Tập Của Từng Nhóm Khóa"
+        )
+        fig_course_status.update_layout(margin=dict(l=10, r=10, t=35, b=10), showlegend=False)
+        st.plotly_chart(fig_course_status, use_container_width=True)
+
+    # Bảng tổng kết số liệu 3 nhóm khóa học
+    summary_course_rows = [
+        {
+            "Nhóm Thời Lượng": "1. Khóa ngắn (< 1 tháng)",
+            "Tổng Số Học Viên": tot_g1,
+            "Số HV On-Track / Hoàn Thành": on_track_g1,
+            "Tỷ Lệ Thực Tế (%)": f"{pct_g1:.1f}%",
+            "Mục Tiêu Benchmark (%)": f"{target_g1:.0f}%",
+            "Đánh Giá": "🟢 Đạt Benchmark" if pct_g1 >= target_g1 else "🔴 Chưa đạt",
+            "Tỷ Lệ Xong Môn TB": f"{avg_c_done_g1:.1f}%"
+        },
+        {
+            "Nhóm Thời Lượng": "2. Khóa trung hạn (1 - < 12 tháng)",
+            "Tổng Số Học Viên": tot_g2,
+            "Số HV On-Track / Hoàn Thành": on_track_g2,
+            "Tỷ Lệ Thực Tế (%)": f"{pct_g2:.1f}%",
+            "Mục Tiêu Benchmark (%)": f"{target_g2:.0f}%",
+            "Đánh Giá": "🟢 Đạt Benchmark" if pct_g2 >= target_g2 else "🔴 Cần đẩy mạnh",
+            "Tỷ Lệ Xong Môn TB": f"{avg_c_done_g2:.1f}%"
+        },
+        {
+            "Nhóm Thời Lượng": "3. Khóa dài hạn (≥ 12 tháng)",
+            "Tổng Số Học Viên": tot_g3,
+            "Số HV On-Track / Hoàn Thành": on_track_g3,
+            "Tỷ Lệ Thực Tế (%)": f"{pct_g3:.1f}%",
+            "Mục Tiêu Benchmark (%)": f"{target_g3:.0f}%",
+            "Đánh Giá": "🟢 Đạt Benchmark" if pct_g3 >= target_g3 else "🟡 Cần cải thiện",
+            "Tỷ Lệ Xong Môn TB": f"{avg_c_done_g3:.1f}%"
+        }
+    ]
+    st.dataframe(pd.DataFrame(summary_course_rows), use_container_width=True, hide_index=True)
+
+    st.markdown("---")
+
+    # --- KHỐI HỌC VIÊN CẦN LÃNH ĐẠO PHÊ DUYỆT CAN THIỆP CẤP CAO ---
+    st.subheader("🚨 Danh Sách Học Viên Cần Lãnh Đạo / Ban Giám Đốc Can Thiệp")
+    st.caption("Bộ lọc chuyên sâu: Chỉ hiển thị các ca học viên ở mức **CRITICAL** hoặc đã **dừng học liên tiếp ≥ 4 tuần** vượt ngoài thẩm quyền xử lý thông thường của Hannah.")
+
+    df_escalate = df_deep[(df_deep["RISK_LEVEL"] == "CRITICAL") | (df_deep["INACTIVITY_WEEKS"] >= 4)].copy()
+
+    if df_escalate.empty:
+        st.success("🎉 Không có ca học viên nào rơi vào mức rủi ro CRITICAL hoặc dừng học ≥ 4 tuần trong phạm vi bộ lọc.")
+    else:
+        e_col1, e_col2, e_col3 = st.columns(3)
+        with e_col1:
+            st.metric("🔴 TỔNG CA NGUY CẤP (CẦN LÃNH ĐẠO)", f"{len(df_escalate)} HV", help="Học viên CRITICAL hoặc dừng học >= 4 tuần")
+        with e_col2:
+            crit_sub_cnt = (df_escalate["RISK_LEVEL"] == "CRITICAL").sum()
+            st.metric("⚠️ MỨC ĐỘ CRITICAL", f"{crit_sub_cnt} HV", delta="Cần hành động ngay", delta_color="inverse")
+        with e_col3:
+            long_stop_cnt = (df_escalate["INACTIVITY_WEEKS"] >= 4).sum()
+            st.metric("⏳ DỪNG HỌC KÉO DÀI (≥ 4 TUẦN)", f"{long_stop_cnt} HV", help="Nguy cơ rớt môn hoặc bỏ học rất cao")
+
+        def suggest_leader_action(row):
+            inact = row.get("INACTIVITY_WEEKS", 0)
+            rem_m = row.get("THÁNG_CÒN_LẠI_NUM", 0)
+            rem_c = row.get("SỐ_MÔN_CÒN_LẠI", 0)
+            cause = row.get("ROOT_CAUSE", "")
+            if inact >= 8:
+                return "📞 Lãnh đạo gọi điện trực tiếp phụ huynh + Làm thủ tục bảo lưu / thôi học"
+            elif rem_m <= 1.0 and rem_c > 0:
+                return "🏛️ Trình BQL đào tạo duyệt gia hạn môn hoặc hỗ trợ học bổng trợ lực"
+            elif "Mentor" in cause or "bài" in cause:
+                return "👨‍🏫 Phê duyệt gán Mentor 1:1 chuyên biệt (Kèm cặp cấp tốc gỡ vướng bài tập)"
+            else:
+                return "⚠️ Hẹn lịch làm việc 3 bên (Lãnh đạo Hannah + Học viên + Mentor)"
+
+        df_escalate["ĐỀ XUẤT CAN THIỆP LÃNH ĐẠO"] = df_escalate.apply(suggest_leader_action, axis=1)
+
+        escalate_display_cols = [
+            "WEEK", "MSSV", "FULL_NAME", "HANNAH", "MÔN_ĐANG_HỌC",
+            "INACTIVITY_WEEKS", "ROOT_CAUSE", "ACTION_SUGGESTION", "ĐỀ XUẤT CAN THIỆP LÃNH ĐẠO"
+        ]
+        valid_esc_cols = [c for c in escalate_display_cols if c in df_escalate.columns]
+
+        st.dataframe(df_escalate[valid_esc_cols], use_container_width=True, hide_index=True)
+
+        excel_esc_buf = io.BytesIO()
+        with pd.ExcelWriter(excel_esc_buf, engine="openpyxl") as writer:
+            df_escalate[valid_esc_cols].to_excel(writer, sheet_name="Bao_Cao_Lanh_Dao", index=False)
+        excel_esc_bytes = excel_esc_buf.getvalue()
+
+        st.download_button(
+            label="📥 Xuất Báo Cáo Học Viên Cần Lãnh Đạo Can Thiệp (Excel)",
+            data=excel_esc_bytes,
+            file_name=f"Bao_Cao_Lanh_Dao_Can_Thiep_{selected_week if selected_week != 'Tất cả tuần trong Quý' else selected_quarter}.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
 
 # =========================================================================
 # TAB 1: TỔNG QUAN QUY MÔ & PHÂN BỔ TAG
