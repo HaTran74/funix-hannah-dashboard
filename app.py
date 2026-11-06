@@ -950,61 +950,6 @@ with tab0:
 
     st.markdown("---")
 
-    # --- KHỐI HỌC VIÊN CẦN LÃNH ĐẠO PHÊ DUYỆT CAN THIỆP CẤP CAO ---
-    st.subheader("🚨 Danh Sách Học Viên Cần Lãnh Đạo / Ban Giám Đốc Can Thiệp")
-    st.caption("Bộ lọc chuyên sâu: Chỉ hiển thị các ca học viên ở mức **CRITICAL** hoặc đã **dừng học liên tiếp ≥ 4 tuần** vượt ngoài thẩm quyền xử lý thông thường của Hannah.")
-
-    df_escalate = df_deep[(df_deep["RISK_LEVEL"] == "CRITICAL") | (df_deep["INACTIVITY_WEEKS"] >= 4)].copy()
-
-    if df_escalate.empty:
-        st.success("🎉 Không có ca học viên nào rơi vào mức rủi ro CRITICAL hoặc dừng học ≥ 4 tuần trong phạm vi bộ lọc.")
-    else:
-        e_col1, e_col2, e_col3 = st.columns(3)
-        with e_col1:
-            st.metric("🔴 TỔNG CA NGUY CẤP (CẦN LÃNH ĐẠO)", f"{len(df_escalate)} HV", help="Học viên CRITICAL hoặc dừng học >= 4 tuần")
-        with e_col2:
-            crit_sub_cnt = (df_escalate["RISK_LEVEL"] == "CRITICAL").sum()
-            st.metric("⚠️ MỨC ĐỘ CRITICAL", f"{crit_sub_cnt} HV", delta="Cần hành động ngay", delta_color="inverse")
-        with e_col3:
-            long_stop_cnt = (df_escalate["INACTIVITY_WEEKS"] >= 4).sum()
-            st.metric("⏳ DỪNG HỌC KÉO DÀI (≥ 4 TUẦN)", f"{long_stop_cnt} HV", help="Nguy cơ rớt môn hoặc bỏ học rất cao")
-
-        def suggest_leader_action(row):
-            inact = row.get("INACTIVITY_WEEKS", 0)
-            rem_m = row.get("THÁNG_CÒN_LẠI_NUM", 0)
-            rem_c = row.get("SỐ_MÔN_CÒN_LẠI", 0)
-            cause = row.get("ROOT_CAUSE", "")
-            if inact >= 8:
-                return "📞 Lãnh đạo gọi điện trực tiếp phụ huynh + Làm thủ tục bảo lưu / thôi học"
-            elif rem_m <= 1.0 and rem_c > 0:
-                return "🏛️ Trình BQL đào tạo duyệt gia hạn môn hoặc hỗ trợ học bổng trợ lực"
-            elif "Mentor" in cause or "bài" in cause:
-                return "👨‍🏫 Phê duyệt gán Mentor 1:1 chuyên biệt (Kèm cặp cấp tốc gỡ vướng bài tập)"
-            else:
-                return "⚠️ Hẹn lịch làm việc 3 bên (Lãnh đạo Hannah + Học viên + Mentor)"
-
-        df_escalate["ĐỀ XUẤT CAN THIỆP LÃNH ĐẠO"] = df_escalate.apply(suggest_leader_action, axis=1)
-
-        escalate_display_cols = [
-            "WEEK", "MSSV", "FULL_NAME", "HANNAH", "MÔN_ĐANG_HỌC",
-            "INACTIVITY_WEEKS", "ROOT_CAUSE", "ACTION_SUGGESTION", "ĐỀ XUẤT CAN THIỆP LÃNH ĐẠO"
-        ]
-        valid_esc_cols = [c for c in escalate_display_cols if c in df_escalate.columns]
-
-        st.dataframe(df_escalate[valid_esc_cols], use_container_width=True, hide_index=True)
-
-        excel_esc_buf = io.BytesIO()
-        with pd.ExcelWriter(excel_esc_buf, engine="openpyxl") as writer:
-            df_escalate[valid_esc_cols].to_excel(writer, sheet_name="Bao_Cao_Lanh_Dao", index=False)
-        excel_esc_bytes = excel_esc_buf.getvalue()
-
-        st.download_button(
-            label="📥 Xuất Báo Cáo Học Viên Cần Lãnh Đạo Can Thiệp (Excel)",
-            data=excel_esc_bytes,
-            file_name=f"Bao_Cao_Lanh_Dao_Can_Thiep_{selected_week if selected_week != 'Tất cả tuần trong Quý' else selected_quarter}.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        )
-
 # =========================================================================
 # TAB 1: TỔNG QUAN QUY MÔ & PHÂN BỔ TAG
 # =========================================================================
