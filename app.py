@@ -622,11 +622,18 @@ with tab0:
     target_act = 70.0
     diff_act = act_h1_pct - target_act
 
-    # KPI 2: Tỷ lệ học thuật / Có tiến độ tuần H1 (Quiz, Lab, ASM, PT, FE) (Target >= 3%)
-    prog_h1_cnt = (df_h1_tab0["ACADEMIC_OUTPUT"] > 0).sum() if tot_h1_kpi > 0 else 0
-    prog_h1_pct = (prog_h1_cnt / tot_h1_kpi * 100) if tot_h1_kpi > 0 else 0.0
-    target_prog = 3.0
-    diff_prog = prog_h1_pct - target_prog
+    # KPI 2: TIẾN ĐỘ HỌC THUẬT TRUNG BÌNH CỦA 1 HỌC VIÊN (TAG H1)
+    # Tính theo 5 hạng mục đánh giá: Quiz + Lab + Assignment + Progress Test + Final Exam (KHÔNG DÙNG XP)
+    avg_prog_h1 = df_h1_tab0["TIẾN_ĐỘ_HỌC_THUẬT"].mean() if ("TIẾN_ĐỘ_HỌC_THUẬT" in df_h1_tab0.columns and tot_h1_kpi > 0) else 0.0
+    target_prog = 30.0  # Benchmark chuẩn tiến độ môn học: >= 30%
+    diff_prog = avg_prog_h1 - target_prog
+
+    # Mức tăng tiến độ tuần trung bình của nhóm Active
+    df_h1_act = df_h1_tab0[df_h1_tab0["TOTAL_ACTIVITY"] > 0] if "TOTAL_ACTIVITY" in df_h1_tab0.columns else df_h1_tab0
+    avg_gain_act = df_h1_act["DELTA_TIẾN_ĐỘ"].mean() if ("DELTA_TIẾN_ĐỘ" in df_h1_act.columns and len(df_h1_act) > 0) else 0.0
+    gain_cnt = (df_h1_tab0["DELTA_TIẾN_ĐỘ"] > 0).sum() if ("DELTA_TIẾN_ĐỘ" in df_h1_tab0.columns and tot_h1_kpi > 0) else 0
+    target_gain = 3.0  # Target tăng trưởng mỗi tuần: >= 3.0%
+    diff_gain = avg_gain_act - target_gain
 
     # KPI 3: Tỷ lệ hoàn thành theo 3 nhóm thời lượng khóa học
     # Nhóm 1: Khóa ngắn (< 1 tháng) - Target 70%
