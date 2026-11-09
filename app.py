@@ -2080,7 +2080,7 @@ with tab5:
     st.markdown(f"Hiển thị **{len(df_all_h1_view):,}** học viên H1:")
     h1_view_cols = [
         "WEEK", "MSSV", "FULL_NAME", "EMAIL", "HANNAH", "CHƯƠNG_TRÌNH", "MÔN_ĐANG_HỌC",
-        "CHUYỂN_BIẾN_TUẦN_NÀY", "MÔN_HOÀN_THÀNH / TỔNG", "THÁNG_CÒN_LẠI",
+        "TIẾN_ĐỘ_HỌC_THUẬT", "CHUYỂN_BIẾN_TUẦN_NÀY", "MÔN_HOÀN_THÀNH / TỔNG", "THÁNG_CÒN_LẠI",
         "QUIZ", "LAB", "ASSIGNMENT", "PROGRESS_TEST", "FINAL_EXAM",
         "TOTAL_ACTIVITY", "KHẢ_NĂNG_HOÀN_THÀNH", "RISK_LEVEL", "ROOT_CAUSE", "ACTION_SUGGESTION"
     ]
@@ -2089,5 +2089,8 @@ with tab5:
     st.dataframe(
         df_all_h1_view[present_h1_cols],
         use_container_width=True,
-        hide_index=True
+        hide_index=True,
+        column_config={
+            "TIẾN_ĐỘ_HỌC_THUẬT": st.column_config.ProgressColumn("Tiến Độ Môn (%)", min_value=0, max_value=100, format="%.1f%%")
+        }
     )
