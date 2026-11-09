@@ -1005,30 +1005,37 @@ with tab0:
     st.markdown("---")
 
     # =========================================================================
-    # PHẦN 3: KẾT LUẬN & NHẬN XÉT ĐIỀU HÀNH TUẦN / QUÝ
+    # PHẦN 3: KẾT LUẬN & NHẬN XÉT ĐIỀU HÀNH TUẦN / QUÝ (TỰ ĐỘNG THEO KỲ BÁO CÁO)
     # =========================================================================
-    st.markdown("### 📋 3. Kết Luận Tuần / Quý")
-    st.caption("Nhận định đánh giá tổng hợp của Leader Hannah về tinh thần học tập và nhịp độ học thuật.")
+    st.markdown(f"### 📋 3. Kết Luận Tuần / Quý ({period_title})")
+    st.caption("Nhận định đánh giá tổng hợp tự động theo số liệu thực tế của kỳ báo cáo.")
 
     concl_col1, concl_col2 = st.columns(2)
 
     with concl_col1:
-        st.markdown("""
+        if act_h1_pct >= 60.0:
+            act_note = f"<b>Team Hannah đã làm rất tốt việc kéo học viên quay lại hệ thống</b>. Tỷ lệ học viên hoạt động đạt <b>{act_h1_pct:.2f}%</b> ({act_h1_cnt:,}/{tot_h1_kpi:,} học viên có Activity)."
+        else:
+            act_note = f"Tỷ lệ học viên hoạt động tuần này đạt <b>{act_h1_pct:.2f}%</b> ({act_h1_cnt:,}/{tot_h1_kpi:,} học viên). Hannah cần tiếp tục đôn đốc tăng cường tần suất vào học."
+        
+        st.markdown(f"""
         <div style="background-color: #f0fdf4; border-left: 5px solid #16a34a; padding: 16px 20px; border-radius: 8px; margin-bottom: 12px; height: 100%;">
             <h5 style="color: #166534; margin: 0 0 10px 0; font-size: 15px; font-weight: 700;">⚡ 1. Về tinh thần học tập chung (Activity Rate):</h5>
             <ul style="color: #15803d; margin: 0; padding-left: 20px; font-size: 14px; line-height: 1.6;">
-                <li><b>Team Hannah đã làm rất tốt việc kéo học viên quay lại hệ thống</b>. Tỷ lệ học viên hoạt động tăng lên <b>61.28%</b> (gần chạm mốc Benchmark 70%).</li>
+                <li>{act_note}</li>
+                <li>Mục tiêu Benchmark đề ra là <b>70.0%</b> (hiện đang {'vượt chỉ tiêu' if act_h1_pct >= 70.0 else f'còn cách mục tiêu {70.0 - act_h1_pct:.1f}%'}).</li>
             </ul>
         </div>
         """, unsafe_allow_html=True)
 
     with concl_col2:
-        st.markdown("""
+        st.markdown(f"""
         <div style="background-color: #f0f9ff; border-left: 5px solid #0284c7; padding: 16px 20px; border-radius: 8px; margin-bottom: 12px; height: 100%;">
-            <h5 style="color: #075985; margin: 0 0 10px 0; font-size: 15px; font-weight: 700;">📚 2. Về nhịp học tập (Academic Output):</h5>
+            <h5 style="color: #075985; margin: 0 0 10px 0; font-size: 15px; font-weight: 700;">📚 2. Về nhịp học tập & Tiến độ (Academic Progress):</h5>
             <ul style="color: #0369a1; margin: 0; padding-left: 20px; font-size: 14px; line-height: 1.6;">
-                <li>Học viên đang ở giai đoạn <b>"nạp kiến thức"</b> (học lý thuyết, chuẩn bị Assignment lớn) nên Activity tăng cao, nhưng chưa bấm nộp bài đánh giá trước thời điểm chốt dữ liệu tuần 44.</li>
-                <li>Đây là <b>tín hiệu tích cực</b> cho thấy học viên không hề bỏ học hay bất động, mà đang trong chu kỳ tích lũy để chuẩn bị nộp bài ở các tuần tiếp theo.</li>
+                <li>Tiến độ môn học tích lũy trung bình của 1 học viên đạt <b>{avg_prog_h1:.1f}%</b> (tính từ 5 hạng mục Quiz + Lab + ASM + Progress Test + Final Exam, không dùng XP).</li>
+                <li>Mức tăng tiến độ tuần trung bình đạt <b>+{avg_gain_act:.2f}%/HV active</b> (so với Target tăng trưởng 3.0%/tuần, có <b>{gain_cnt:,}</b> học viên tăng tiến độ trong kỳ).</li>
+                <li>Học viên đang trong chu kỳ tích lũy kiến thức và chuẩn bị nộp bài ở các tuần tiếp theo.</li>
             </ul>
         </div>
         """, unsafe_allow_html=True)
