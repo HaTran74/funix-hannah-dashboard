@@ -506,6 +506,28 @@ for _, r_look in df_history_source.iterrows():
         int(r_look.get("TOTAL_ACTIVITY", 0))
     )
 
+# Bảng tra cứu lịch sử tiến độ học thuật toàn cục: (WEEK, MSSV) -> (TIẾN_ĐỘ_HỌC_THUẬT, MÔN_ĐANG_HỌC)
+history_prog_lookup = {}
+for _, r_look in df_clean.iterrows():
+    history_prog_lookup[(r_look["WEEK"], r_look["MSSV"])] = (
+        float(r_look.get("TIẾN_ĐỘ_HỌC_THUẬT", 0.0)),
+        str(r_look.get("MÔN_ĐANG_HỌC", "")).strip()
+    )
+
+def determine_academic_delta(row, forced_prev_week=None):
+    curr_w = row.get("WEEK", "")
+    target_prev_w = forced_prev_week if forced_prev_week else week_to_prev_map.get(curr_w)
+    if not target_prev_w:
+        return 0.0
+    mssv = row.get("MSSV", "")
+    if (target_prev_w, mssv) not in history_prog_lookup:
+        return 0.0
+    p_prog, p_mon = history_prog_lookup[(target_prev_w, mssv)]
+    c_mon = str(row.get("MÔN_ĐANG_HỌC", "")).strip()
+    if p_mon == c_mon:
+        return max(float(row.get("TIẾN_ĐỘ_HỌC_THUẬT", 0.0)) - p_prog, 0.0)
+    return 0.0
+
 # Hàm gán nhãn chuyển biến thực tế
 def determine_recovery_status(row, forced_prev_week=None):
     curr_w = row.get("WEEK", "")
@@ -538,6 +560,9 @@ for df_target in [df_base, df_deep]:
         df_target["CHUYỂN_BIẾN_TUẦN_NÀY"] = df_target.apply(
             lambda r: determine_recovery_status(r, prev_week_name if selected_week != "Tất cả tuần trong Quý" else None), axis=1
         )
+        df_target["DELTA_TIẾN_ĐỘ"] = df_target.apply(
+            lambda r: determine_academic_delta(r, prev_week_name if selected_week != "Tất cả tuần trong Quý" else None), axis=1
+        )
         df_target["ACTION_TUẦN_TRƯỚC"] = df_target.apply(
             lambda r: get_previous_action_note(
                 notes_db, 
@@ -548,6 +573,7 @@ for df_target in [df_base, df_deep]:
         )
     else:
         df_target["CHUYỂN_BIẾN_TUẦN_NÀY"] = "N/A"
+        df_target["DELTA_TIẾN_ĐỘ"] = 0.0
         df_target["ACTION_TUẦN_TRƯỚC"] = "N/A"
 
 # ==================== BANNER LÀM RÕ CHU TRÌNH ĐO LƯỜNG ACTION ====================
