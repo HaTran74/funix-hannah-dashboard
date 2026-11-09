@@ -726,16 +726,16 @@ with tab0:
 
     with k2:
         st.metric(
-            label="📚 2. Tiến Độ Học Thuật TB (Tag H1)",
-            value=f"{avg_prog_h1:.1f}%",
-            delta=f"{diff_prog:+.1f}% vs Benchmark 30%",
-            delta_color="normal" if diff_prog >= 0 else "inverse",
-            help=f"Được tính trung bình trên 5 hạng mục đánh giá: Quiz + Lab + ASM + Progress Test + Final Exam (không dùng XP). Tiến độ môn TB hiện tại: {avg_prog_h1:.1f}%. Mức tăng tuần của nhóm Active: +{avg_gain_act:.2f}%/HV (so với Target tăng >= 3.0%/tuần, có {gain_cnt} HV tăng tiến độ)."
+            label="📚 2. Tiến Độ Học Tập Môn Tuần (Tag H1)",
+            value=f"{avg_gain_act:.2f}%",
+            delta=f"{diff_gain:+.2f}% vs Target 3.0%/tuần",
+            delta_color="normal" if diff_gain >= 0 else "inverse",
+            help=f"Đo lường mức tăng tiến độ môn trung bình của 1 học viên trong tuần (tính từ 5 hạng mục: Quiz + Lab + ASM + Progress Test + Final Exam, không dùng XP). Mục tiêu: >= 3.0%/tuần. Tiến độ môn tích lũy trung bình hiện tại: {avg_prog_h1:.1f}%."
         )
-        if avg_prog_h1 >= target_prog:
-            st.success(f"🟢 Đạt Benchmark tiến độ môn ({gain_cnt} HV tăng tiến độ tuần này)")
+        if avg_gain_act >= target_gain:
+            st.success(f"🟢 Đạt chuẩn tăng trưởng tuần ({gain_cnt} HV tăng tiến độ, TB tích lũy: {avg_prog_h1:.1f}%)")
         else:
-            st.warning(f"🟡 Cần đẩy mạnh (Mức tăng tuần: +{avg_gain_act:.2f}% vs Target >= 3%)")
+            st.warning(f"🟡 Thiếu {target_gain - avg_gain_act:.2f}% để đạt 3.0%/tuần ({gain_cnt} HV tăng, TB tích lũy: {avg_prog_h1:.1f}%)")
 
     with k3:
         if csat_pct is not None:
