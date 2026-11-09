@@ -950,6 +950,37 @@ with tab0:
 
     st.markdown("---")
 
+    # =========================================================================
+    # PHẦN 3: KẾT LUẬN & NHẬN XÉT ĐIỀU HÀNH TUẦN / QUÝ
+    # =========================================================================
+    st.markdown("### 📋 3. Kết Luận Tuần / Quý")
+    st.caption("Nhận định đánh giá tổng hợp của Leader Hannah về tinh thần học tập và nhịp độ học thuật.")
+
+    concl_col1, concl_col2 = st.columns(2)
+
+    with concl_col1:
+        st.markdown("""
+        <div style="background-color: #f0fdf4; border-left: 5px solid #16a34a; padding: 16px 20px; border-radius: 8px; margin-bottom: 12px; height: 100%;">
+            <h5 style="color: #166534; margin: 0 0 10px 0; font-size: 15px; font-weight: 700;">⚡ 1. Về tinh thần học tập chung (Activity Rate):</h5>
+            <ul style="color: #15803d; margin: 0; padding-left: 20px; font-size: 14px; line-height: 1.6;">
+                <li><b>Team Hannah đã làm rất tốt việc kéo học viên quay lại hệ thống</b>. Tỷ lệ học viên hoạt động tăng lên <b>61.28%</b> (gần chạm mốc Benchmark 70%).</li>
+            </ul>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with concl_col2:
+        st.markdown("""
+        <div style="background-color: #f0f9ff; border-left: 5px solid #0284c7; padding: 16px 20px; border-radius: 8px; margin-bottom: 12px; height: 100%;">
+            <h5 style="color: #075985; margin: 0 0 10px 0; font-size: 15px; font-weight: 700;">📚 2. Về nhịp học tập (Academic Output):</h5>
+            <ul style="color: #0369a1; margin: 0; padding-left: 20px; font-size: 14px; line-height: 1.6;">
+                <li>Học viên đang ở giai đoạn <b>"nạp kiến thức"</b> (học lý thuyết, chuẩn bị Assignment lớn) nên Activity tăng cao, nhưng chưa bấm nộp bài đánh giá trước thời điểm chốt dữ liệu tuần 44.</li>
+                <li>Đây là <b>tín hiệu tích cực</b> cho thấy học viên không hề bỏ học hay bất động, mà đang trong chu kỳ tích lũy để chuẩn bị nộp bài ở các tuần tiếp theo.</li>
+            </ul>
+        </div>
+        """, unsafe_allow_html=True)
+
+    st.markdown("---")
+
 # =========================================================================
 # TAB 1: TỔNG QUAN QUY MÔ & PHÂN BỔ TAG
 # =========================================================================
