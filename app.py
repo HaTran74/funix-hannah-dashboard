@@ -616,6 +616,14 @@ with tab0:
     df_h1_tab0 = df_deep[df_deep["TAG_CODE"] == "H1"].copy() if "TAG_CODE" in df_deep.columns else df_deep.copy()
     tot_h1_kpi = len(df_h1_tab0)
 
+    # Hiển thị tóm tắt quy mô mẫu đang chọn để tránh hiểu lầm khi áp dụng bộ lọc
+    if tot_h1_kpi > 0:
+        act_cnt_quick = (df_h1_tab0["TOTAL_ACTIVITY"] > 0).sum()
+        filter_note = f" (Bộ lọc: {len(selected_hannahs)} Hannah, {len(selected_progs)} Chương trình)" if (len(selected_hannahs) < len(all_hannahs) or len(selected_progs) < len(all_progs)) else ""
+        st.info(f"📊 Phạm vi dữ liệu: **{period_title}**{filter_note} • Tổng số học viên Tag H1: **{tot_h1_kpi:,}** học viên • Có hoạt động tuần: **{act_cnt_quick:,}** học viên.")
+    else:
+        st.warning(f"⚠️ Không có học viên Tag H1 nào phù hợp với bộ lọc hiện tại của kỳ **{period_title}**. Vui lòng kiểm tra lại bộ lọc Hannah / Chương trình ở thanh bên.")
+
     # KPI 1: Tỷ lệ Active tuần H1 (Target >= 70%)
     act_h1_cnt = (df_h1_tab0["TOTAL_ACTIVITY"] > 0).sum() if tot_h1_kpi > 0 else 0
     act_h1_pct = (act_h1_cnt / tot_h1_kpi * 100) if tot_h1_kpi > 0 else 0.0
