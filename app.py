@@ -1843,7 +1843,7 @@ with tab4:
 
     action_cols = [
         "MSSV", "FULL_NAME", "HANNAH", "CHƯƠNG_TRÌNH", "MÔN_ĐANG_HỌC",
-        "LEARNING_ACCESS", "MENTOR_SUPPORT", "ACADEMIC_OUTPUT", "TOTAL_ACTIVITY",
+        "TIẾN_ĐỘ_HỌC_THUẬT", "LEARNING_ACCESS", "MENTOR_SUPPORT", "ACADEMIC_OUTPUT", "TOTAL_ACTIVITY",
         "RISK_LEVEL", "ACTION_SUGGESTION"
     ]
     present_action_cols = [c for c in action_cols if c in df_filtered_action.columns]
@@ -1854,6 +1854,7 @@ with tab4:
             "HANNAH": "Hannah",
             "CHƯƠNG_TRÌNH": "Chương trình",
             "MÔN_ĐANG_HỌC": "Môn đang học",
+            "TIẾN_ĐỘ_HỌC_THUẬT": "Tiến Độ Môn (%)",
             "LEARNING_ACCESS": "Vào LMS",
             "MENTOR_SUPPORT": "Hỏi Mentor",
             "ACADEMIC_OUTPUT": "Bài Nộp",
@@ -1862,7 +1863,10 @@ with tab4:
             "ACTION_SUGGESTION": "Đề Xuất Hành Động"
         }),
         use_container_width=True,
-        hide_index=True
+        hide_index=True,
+        column_config={
+            "Tiến Độ Môn (%)": st.column_config.ProgressColumn("Tiến Độ Môn (%)", min_value=0, max_value=100, format="%.1f%%")
+        }
     )
 
     # -------------------------------------------------------------
