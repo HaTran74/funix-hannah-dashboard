@@ -726,16 +726,16 @@ with tab0:
 
     with k2:
         st.metric(
-            label="📚 2. Tiến Độ Học Thuật Tuần (Tag H1)",
-            value=f"{prog_h1_pct:.1f}%",
-            delta=f"{diff_prog:+.1f}% vs Target >= 3%",
+            label="📚 2. Tiến Độ Học Thuật TB (Tag H1)",
+            value=f"{avg_prog_h1:.1f}%",
+            delta=f"{diff_prog:+.1f}% vs Benchmark 30%",
             delta_color="normal" if diff_prog >= 0 else "inverse",
-            help=f"Thực tế: {prog_h1_cnt}/{tot_h1_kpi} học viên có nộp sản phẩm đánh giá (Quiz / Lab / ASM / PT / FE) tuần này. Mục tiêu: >= 3%."
+            help=f"Được tính trung bình trên 5 hạng mục đánh giá: Quiz + Lab + ASM + Progress Test + Final Exam (không dùng XP). Tiến độ môn TB hiện tại: {avg_prog_h1:.1f}%. Mức tăng tuần của nhóm Active: +{avg_gain_act:.2f}%/HV (so với Target tăng >= 3.0%/tuần, có {gain_cnt} HV tăng tiến độ)."
         )
-        if prog_h1_pct >= target_prog:
-            st.success(f"🟢 Đạt chuẩn tiến độ ({prog_h1_cnt} HV có nộp bài/thi tuần này)")
+        if avg_prog_h1 >= target_prog:
+            st.success(f"🟢 Đạt Benchmark tiến độ môn ({gain_cnt} HV tăng tiến độ tuần này)")
         else:
-            st.error(f"🔴 Cảnh báo: Tỷ lệ nộp bài dưới ngưỡng 3%")
+            st.warning(f"🟡 Cần đẩy mạnh (Mức tăng tuần: +{avg_gain_act:.2f}% vs Target >= 3%)")
 
     with k3:
         if csat_pct is not None:
@@ -753,7 +753,7 @@ with tab0:
                 st.warning(f"🟡 Cần cải thiện trải nghiệm học tập")
         else:
             st.metric(
-                label="⭐ 3. Tỷ Lệ Hài Lòng (CSAT Quý)",
+                label="⭐ 3. Tỷ Lòng Hài Lòng (CSAT Quý)",
                 value="N/A",
                 delta="Đang cập nhật survey"
             )
@@ -765,7 +765,7 @@ with tab0:
     with c_core1:
         kpi_core_data = [
             {"CHỈ SỐ": "1. Active H1 (Tuần)", "THỰC TẾ (%)": round(act_h1_pct, 1), "BENCHMARK (%)": target_act, "TRẠNG THÁI": "ĐẠT CHUẨN" if act_h1_pct >= target_act else "CHƯA ĐẠT"},
-            {"CHỈ SỐ": "2. Tiến Độ Tuần (H1)", "THỰC TẾ (%)": round(prog_h1_pct, 1), "BENCHMARK (%)": target_prog, "TRẠNG THÁI": "ĐẠT CHUẨN" if prog_h1_pct >= target_prog else "CHƯA ĐẠT"}
+            {"CHỈ SỐ": "2. Tiến Độ TB H1 (Môn)", "THỰC TẾ (%)": round(avg_prog_h1, 1), "BENCHMARK (%)": target_prog, "TRẠNG THÁI": "ĐẠT CHUẨN" if avg_prog_h1 >= target_prog else "CHƯA ĐẠT"}
         ]
         if csat_pct is not None:
             kpi_core_data.append({
