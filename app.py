@@ -1517,6 +1517,8 @@ with tab3:
             "HANNAH": h_name,
             "ĐIỂM HIỆU SUẤT": score,
             "TỔNG HV H1": tot,
+            "TB TIẾN ĐỘ MÔN (%)": round(grp["TIẾN_ĐỘ_HỌC_THUẬT"].mean(), 1) if "TIẾN_ĐỘ_HỌC_THUẬT" in grp.columns else 0.0,
+            "MỨC TĂNG TUẦN (%)": round(grp["DELTA_TIẾN_ĐỘ"].mean(), 2) if "DELTA_TIẾN_ĐỘ" in grp.columns else 0.0,
             "TỶ LỆ AN TOÀN (%)": round(low_ratio, 1),
             "HV NGUY CƠ (HIGH/CRIT)": urgent,
             "🟢 CỨU NGUY THÀNH CÔNG": cnt_improved,
@@ -1533,6 +1535,8 @@ with tab3:
         use_container_width=True,
         column_config={
             "ĐIỂM HIỆU SUẤT": st.column_config.ProgressColumn("Điểm Hiệu Suất", format="%.1f", min_value=0, max_value=100),
+            "TB TIẾN ĐỘ MÔN (%)": st.column_config.NumberColumn("TB Tiến Độ Môn (%)", format="%.1f%%", help="Tiến độ học thuật trung bình của học viên phụ trách (Quiz + Lab + ASM + PT + FE)"),
+            "MỨC TĂNG TUẦN (%)": st.column_config.NumberColumn("Mức Tăng Tuần (%)", format="%.2f%%", help="Mức tăng tiến độ trung bình của học viên trong tuần"),
             "TỶ LỆ CAN THIỆP THÀNH CÔNG (%)": st.column_config.NumberColumn("Tỷ lệ Cứu Nguy (%)", format="%.1f%%", help="Tỷ lệ học viên quay lại học sau khi Hannah can thiệp"),
             "TỶ LỆ PHỦ ACTION (%)": st.column_config.NumberColumn("Tỷ lệ Phủ Action (%)", format="%.1f%%", help="Tỷ lệ học viên nguy cơ đã được Hannah lập kế hoạch ghi chú"),
             "TỶ LỆ AN TOÀN (%)": st.column_config.NumberColumn("Tỷ lệ An toàn (%)", format="%.1f%%")
