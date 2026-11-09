@@ -765,7 +765,7 @@ with tab0:
     with c_core1:
         kpi_core_data = [
             {"CHỈ SỐ": "1. Active H1 (Tuần)", "THỰC TẾ (%)": round(act_h1_pct, 1), "BENCHMARK (%)": target_act, "TRẠNG THÁI": "ĐẠT CHUẨN" if act_h1_pct >= target_act else "CHƯA ĐẠT"},
-            {"CHỈ SỐ": "2. Tiến Độ TB H1 (Môn)", "THỰC TẾ (%)": round(avg_prog_h1, 1), "BENCHMARK (%)": target_prog, "TRẠNG THÁI": "ĐẠT CHUẨN" if avg_prog_h1 >= target_prog else "CHƯA ĐẠT"}
+            {"CHỈ SỐ": "2. Tiến Độ Tuần (H1)", "THỰC TẾ (%)": round(avg_gain_act, 2), "BENCHMARK (%)": target_gain, "TRẠNG THÁI": "ĐẠT CHUẨN" if avg_gain_act >= target_gain else "CHƯA ĐẠT"}
         ]
         if csat_pct is not None:
             kpi_core_data.append({
