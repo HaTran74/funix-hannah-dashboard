@@ -235,6 +235,19 @@ def normalize_dataset(df):
             df[f"{col}_DONE"] = 0
             df[f"{col}_TOTAL"] = 0
 
+    # Tính tiến độ học thuật trung bình của 1 học viên từ 5 hạng mục đánh giá (không dùng XP)
+    eval_cols = ["QUIZ", "LAB", "ASSIGNMENT", "PROGRESS_TEST", "FINAL_EXAM"]
+    def calc_student_academic_progress(row):
+        pcts = []
+        for col in eval_cols:
+            tot = row.get(f"{col}_TOTAL", 0)
+            done = row.get(f"{col}_DONE", 0)
+            if tot > 0:
+                pcts.append(min(done / tot * 100.0, 100.0))
+        return round(float(np.mean(pcts)), 1) if len(pcts) > 0 else 0.0
+
+    df["TIẾN_ĐỘ_HỌC_THUẬT"] = df.apply(calc_student_academic_progress, axis=1)
+
     def evaluate_completion(row):
         rem_c = row["SỐ_MÔN_CÒN_LẠI"]
         tot_c = row["TỔNG_SỐ_MÔN"]
