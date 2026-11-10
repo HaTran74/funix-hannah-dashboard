@@ -540,23 +540,36 @@ def clean_course_code(code_str):
     return s.split('_')[0].split('.')[0].strip()
 
 def determine_academic_delta(row, forced_prev_week=None):
+    """
+    Đối chiếu trực tiếp 5 trường dữ liệu đánh giá: QUIZ, LAB, ASSIGNMENT, PROGRESS_TEST, FINAL_EXAM
+    của học viên (theo MSSV) giữa tuần trước và tuần này.
+    Ví dụ: Tuần trước 10/15 Quiz, tuần này 12/15 Quiz -> tăng 2/15 = 13.3% Quiz.
+    Tiến độ tuần của học viên = trung bình mức tăng của các hạng mục có trong môn.
+    """
     curr_w = row.get("WEEK", "")
     target_prev_w = forced_prev_week if forced_prev_week else week_to_prev_map.get(curr_w)
     if not target_prev_w:
         return 0.0
     mssv = row.get("MSSV", "")
-    if (target_prev_w, mssv) not in history_prog_lookup:
+    if (target_prev_w, mssv) not in history_eval_lookup:
         return 0.0
-    p_prog, p_mon = history_prog_lookup[(target_prev_w, mssv)]
-    c_mon = str(row.get("MÔN_ĐANG_HỌC", "")).strip()
-    c_prog = float(row.get("TIẾN_ĐỘ_HỌC_THUẬT", 0.0))
 
-    # So khớp chính xác hoặc chuẩn hóa mã môn (bỏ qua đuôi phân lớp/phiên bản: _01_VN, .3.1.VN, ...)
-    p_clean = clean_course_code(p_mon)
-    c_clean = clean_course_code(c_mon)
-    if (p_mon == c_mon) or (p_clean and c_clean and p_clean == c_clean):
-        return max(c_prog - p_prog, 0.0)
-    return 0.0
+    p_data = history_eval_lookup[(target_prev_w, mssv)]
+    category_deltas = []
+
+    for col in EVAL_COLS:
+        c_done = int(row.get(f"{col}_DONE", 0))
+        c_tot = int(row.get(f"{col}_TOTAL", 0))
+        p_done, p_tot = p_data[col]
+
+        # Nếu môn học tuần này yêu cầu hạng mục này (c_tot > 0)
+        if c_tot > 0:
+            c_pct = min(c_done / c_tot * 100.0, 100.0)
+            p_pct = min(p_done / p_tot * 100.0, 100.0) if p_tot > 0 else 0.0
+            diff_pct = max(c_pct - p_pct, 0.0)
+            category_deltas.append(diff_pct)
+
+    return round(float(np.mean(category_deltas)), 2) if category_deltas else 0.0
 
 # Hàm bóc tách sản phẩm học thuật mới hoàn thành trong tuần (Quiz, Lab, ASM, Test, Final Exam)
 def get_weekly_completed_products(row, forced_prev_week=None):
