@@ -654,6 +654,7 @@ with tab0:
     df_h1_act = df_h1_tab0[df_h1_tab0["TOTAL_ACTIVITY"] > 0] if "TOTAL_ACTIVITY" in df_h1_tab0.columns else df_h1_tab0
     avg_gain_act = df_h1_act["DELTA_TIẾN_ĐỘ"].mean() if ("DELTA_TIẾN_ĐỘ" in df_h1_act.columns and len(df_h1_act) > 0) else 0.0
     gain_cnt = (df_h1_tab0["DELTA_TIẾN_ĐỘ"] > 0).sum() if ("DELTA_TIẾN_ĐỘ" in df_h1_tab0.columns and tot_h1_kpi > 0) else 0
+    avg_gain_pos = df_h1_tab0[df_h1_tab0["DELTA_TIẾN_ĐỘ"] > 0]["DELTA_TIẾN_ĐỘ"].mean() if gain_cnt > 0 else 0.0
     target_gain = 3.0  # Target tăng trưởng mỗi tuần: >= 3.0%
     diff_gain = avg_gain_act - target_gain
 
