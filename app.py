@@ -514,6 +514,15 @@ for _, r_look in df_clean.iterrows():
         str(r_look.get("MÔN_ĐANG_HỌC", "")).strip()
     )
 
+def clean_course_code(code_str):
+    s = str(code_str).strip().upper()
+    if not s or s == "-":
+        return ""
+    m = re.match(r"^([A-Z]{2,4}\d{3,4}[A-Z]?)", s)
+    if m:
+        return m.group(1)
+    return s.split('_')[0].split('.')[0].strip()
+
 def determine_academic_delta(row, forced_prev_week=None):
     curr_w = row.get("WEEK", "")
     target_prev_w = forced_prev_week if forced_prev_week else week_to_prev_map.get(curr_w)
@@ -524,8 +533,13 @@ def determine_academic_delta(row, forced_prev_week=None):
         return 0.0
     p_prog, p_mon = history_prog_lookup[(target_prev_w, mssv)]
     c_mon = str(row.get("MÔN_ĐANG_HỌC", "")).strip()
-    if p_mon == c_mon:
-        return max(float(row.get("TIẾN_ĐỘ_HỌC_THUẬT", 0.0)) - p_prog, 0.0)
+    c_prog = float(row.get("TIẾN_ĐỘ_HỌC_THUẬT", 0.0))
+
+    # So khớp chính xác hoặc chuẩn hóa mã môn (bỏ qua đuôi phân lớp/phiên bản: _01_VN, .3.1.VN, ...)
+    p_clean = clean_course_code(p_mon)
+    c_clean = clean_course_code(c_mon)
+    if (p_mon == c_mon) or (p_clean and c_clean and p_clean == c_clean):
+        return max(c_prog - p_prog, 0.0)
     return 0.0
 
 # Hàm gán nhãn chuyển biến thực tế
