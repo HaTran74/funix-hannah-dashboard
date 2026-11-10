@@ -1046,8 +1046,8 @@ with tab0:
             <h5 style="color: #075985; margin: 0 0 10px 0; font-size: 15px; font-weight: 700;">📚 2. Về nhịp học tập & Tiến độ (Academic Progress):</h5>
             <ul style="color: #0369a1; margin: 0; padding-left: 20px; font-size: 14px; line-height: 1.6;">
                 <li>Tiến độ môn học tích lũy trung bình của 1 học viên đạt <b>{avg_prog_h1:.1f}%</b> (tính từ 5 hạng mục Quiz + Lab + ASM + Progress Test + Final Exam, không dùng XP).</li>
-                <li>Mức tăng tiến độ tuần trung bình đạt <b>+{avg_gain_act:.2f}%/HV active</b> (so với Target tăng trưởng 3.0%/tuần, có <b>{gain_cnt:,}</b> học viên tăng tiến độ trong kỳ).</li>
-                <li>Học viên đang trong chu kỳ tích lũy kiến thức và chuẩn bị nộp bài ở các tuần tiếp theo.</li>
+                <li>Mức tăng tiến độ tuần bình quân nhóm Active đạt <b>+{avg_gain_act:.2f}%/HV</b>. Trong đó, riêng nhóm <b>{gain_cnt:,} học viên có nộp bài đánh giá</b> đạt mức bứt phá rất cao là <b>+{avg_gain_pos:.1f}%/HV</b>.</li>
+                <li>Học viên đang ở giai đoạn nạp kiến thức lý thuyết và hoàn thiện đồ án lớn, chuẩn bị cho các đợt nộp bài tập trung ở các tuần kế tiếp.</li>
             </ul>
         </div>
         """, unsafe_allow_html=True)
