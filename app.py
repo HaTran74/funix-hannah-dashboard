@@ -611,6 +611,9 @@ for df_target in [df_base, df_deep]:
         df_target["DELTA_TIẾN_ĐỘ"] = df_target.apply(
             lambda r: determine_academic_delta(r, prev_week_name if selected_week != "Tất cả tuần trong Quý" else None), axis=1
         )
+        df_target["SẢN_PHẨM_TUẦN_NÀY"] = df_target.apply(
+            lambda r: get_weekly_completed_products(r, prev_week_name if selected_week != "Tất cả tuần trong Quý" else None), axis=1
+        )
         df_target["ACTION_TUẦN_TRƯỚC"] = df_target.apply(
             lambda r: get_previous_action_note(
                 notes_db, 
@@ -622,6 +625,7 @@ for df_target in [df_base, df_deep]:
     else:
         df_target["CHUYỂN_BIẾN_TUẦN_NÀY"] = "N/A"
         df_target["DELTA_TIẾN_ĐỘ"] = 0.0
+        df_target["SẢN_PHẨM_TUẦN_NÀY"] = "N/A"
         df_target["ACTION_TUẦN_TRƯỚC"] = "N/A"
 
 # ==================== BANNER LÀM RÕ CHU TRÌNH ĐO LƯỜNG ACTION ====================
