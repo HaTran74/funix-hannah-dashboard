@@ -239,7 +239,7 @@ def normalize_dataset(df):
     eval_cols = ["QUIZ", "LAB", "ASSIGNMENT", "PROGRESS_TEST", "FINAL_EXAM"]
     def calc_student_academic_progress(row):
         pcts = []
-        for col in eval_cols:
+        for col in EVAL_COLS:
             tot = row.get(f"{col}_TOTAL", 0)
             done = row.get(f"{col}_DONE", 0)
             if tot > 0:
@@ -568,7 +568,7 @@ def get_weekly_completed_products(row, forced_prev_week=None):
         "QUIZ": "Quiz", "LAB": "Lab", "ASSIGNMENT": "ASM", 
         "PROGRESS_TEST": "Progress Test", "FINAL_EXAM": "Final Exam"
     }
-    for col in eval_cols:
+    for col in EVAL_COLS:
         c_d = int(row.get(f"{col}_DONE", 0))
         p_d = int(p_data[col][0])
         if c_d > p_d:
