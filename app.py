@@ -514,11 +514,14 @@ for _, r_look in df_clean.iterrows():
         str(r_look.get("MÔN_ĐANG_HỌC", "")).strip()
     )
 
+# Danh sách 5 hạng mục học thuật đánh giá chính
+EVAL_COLS = ["QUIZ", "LAB", "ASSIGNMENT", "PROGRESS_TEST", "FINAL_EXAM"]
+
 # Bảng tra cứu lịch sử chi tiết 5 hạng mục đánh giá: (WEEK, MSSV) -> {col: (DONE, TOTAL)}
 history_eval_lookup = {}
 for _, r_look in df_clean.iterrows():
     history_eval_lookup[(r_look["WEEK"], r_look["MSSV"])] = {
-        col: (int(r_look.get(f"{col}_DONE", 0)), int(r_look.get(f"{col}_TOTAL", 0))) for col in eval_cols
+        col: (int(r_look.get(f"{col}_DONE", 0)), int(r_look.get(f"{col}_TOTAL", 0))) for col in EVAL_COLS
     }
 
 def clean_course_code(code_str):
