@@ -514,6 +514,13 @@ for _, r_look in df_clean.iterrows():
         str(r_look.get("MÔN_ĐANG_HỌC", "")).strip()
     )
 
+# Bảng tra cứu lịch sử chi tiết 5 hạng mục đánh giá: (WEEK, MSSV) -> {col: (DONE, TOTAL)}
+history_eval_lookup = {}
+for _, r_look in df_clean.iterrows():
+    history_eval_lookup[(r_look["WEEK"], r_look["MSSV"])] = {
+        col: (int(r_look.get(f"{col}_DONE", 0)), int(r_look.get(f"{col}_TOTAL", 0))) for col in eval_cols
+    }
+
 def clean_course_code(code_str):
     s = str(code_str).strip().upper()
     if not s or s == "-":
@@ -541,6 +548,33 @@ def determine_academic_delta(row, forced_prev_week=None):
     if (p_mon == c_mon) or (p_clean and c_clean and p_clean == c_clean):
         return max(c_prog - p_prog, 0.0)
     return 0.0
+
+# Hàm bóc tách sản phẩm học thuật mới hoàn thành trong tuần (Quiz, Lab, ASM, Test, Final Exam)
+def get_weekly_completed_products(row, forced_prev_week=None):
+    curr_w = row.get("WEEK", "")
+    target_prev_w = forced_prev_week if forced_prev_week else week_to_prev_map.get(curr_w)
+    if not target_prev_w:
+        return "— (Tuần đầu)"
+    mssv = row.get("MSSV", "")
+    if (target_prev_w, mssv) not in history_eval_lookup:
+        return "— (Mới cập nhật)"
+    
+    p_data = history_eval_lookup[(target_prev_w, mssv)]
+    items = []
+    labels = {
+        "QUIZ": "Quiz", "LAB": "Lab", "ASSIGNMENT": "ASM", 
+        "PROGRESS_TEST": "Progress Test", "FINAL_EXAM": "Final Exam"
+    }
+    for col in eval_cols:
+        c_d = int(row.get(f"{col}_DONE", 0))
+        p_d = int(p_data[col][0])
+        if c_d > p_d:
+            diff = c_d - p_d
+            if col == "FINAL_EXAM":
+                items.append("Đã thi Final Exam")
+            else:
+                items.append(f"+{diff} {labels[col]}")
+    return ", ".join(items) if items else "Chưa có bài mới"
 
 # Hàm gán nhãn chuyển biến thực tế
 def determine_recovery_status(row, forced_prev_week=None):
