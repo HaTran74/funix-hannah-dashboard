@@ -753,12 +753,12 @@ with tab0:
             value=f"{avg_gain_act:.2f}%",
             delta=f"{diff_gain:+.2f}% vs Target 3.0%/tuần",
             delta_color="normal" if diff_gain >= 0 else "inverse",
-            help=f"Đo lường mức tăng tiến độ môn trung bình của 1 học viên trong tuần (tính từ 5 hạng mục: Quiz + Lab + ASM + Progress Test + Final Exam, không dùng XP). Mục tiêu: >= 3.0%/tuần. Tiến độ môn tích lũy trung bình hiện tại: {avg_prog_h1:.1f}%."
+            help=f"Đo lường mức tăng tiến độ môn trung bình của nhóm Active trong tuần (tính từ 5 hạng mục: Quiz + Lab + ASM + Progress Test + Final Exam, không dùng XP). Mục tiêu: >= 3.0%/tuần. Riêng nhóm {gain_cnt} học viên có nộp bài/tăng tiến độ đạt trung bình +{avg_gain_pos:.1f}%. Tiến độ môn tích lũy TB: {avg_prog_h1:.1f}%."
         )
         if avg_gain_act >= target_gain:
-            st.success(f"🟢 Đạt chuẩn tăng trưởng tuần ({gain_cnt} HV tăng tiến độ, TB tích lũy: {avg_prog_h1:.1f}%)")
+            st.success(f"🟢 Đạt chuẩn tăng trưởng tuần ({gain_cnt} HV nộp bài, TB nhóm nộp: +{avg_gain_pos:.1f}%)")
         else:
-            st.warning(f"🟡 Thiếu {target_gain - avg_gain_act:.2f}% để đạt 3.0%/tuần ({gain_cnt} HV tăng, TB tích lũy: {avg_prog_h1:.1f}%)")
+            st.warning(f"🟡 TB Active: {avg_gain_act:.2f}% (Nhóm {gain_cnt} HV nộp bài tăng +{avg_gain_pos:.1f}%, TB tích lũy: {avg_prog_h1:.1f}%)")
 
     with k3:
         if csat_pct is not None:
