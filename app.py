@@ -1498,7 +1498,7 @@ with tab2:
     push_columns = [
         "WEEK", "MSSV", "FULL_NAME", "HANNAH", "CHƯƠNG_TRÌNH", "MÔN_ĐANG_HỌC",
         "SỐ_MÔN_CÒN_LẠI", "THÁNG_CÒN_LẠI", "TOTAL_ACTIVITY",
-        "KHẢ_NĂNG_HOÀN_THÀNH", "TIẾN_ĐỘ_HỌC_THUẬT", "BÀI_TẬP_CÒN_THIẾU", "ACTION_SUGGESTION"
+        "KHẢ_NĂNG_HOÀN_THÀNH", "TIẾN_ĐỘ_HỌC_THUẬT", "SẢN_PHẨM_TUẦN_NÀY", "BÀI_TẬP_CÒN_THIẾU", "ACTION_SUGGESTION"
     ]
     valid_push_cols = [c for c in push_columns if c in df_push_display.columns]
 
@@ -1517,6 +1517,7 @@ with tab2:
             "TOTAL_ACTIVITY": st.column_config.NumberColumn("Activity Tuần", width="small"),
             "KHẢ_NĂNG_HOÀN_THÀNH": st.column_config.TextColumn("Đánh Giá Hoàn Thành", width="medium"),
             "TIẾN_ĐỘ_HỌC_THUẬT": st.column_config.ProgressColumn("Tiến Độ Môn", min_value=0, max_value=100, format="%.1f%%"),
+            "SẢN_PHẨM_TUẦN_NÀY": st.column_config.TextColumn("📝 Bài Nộp Tuần Này", width="medium", help="Bài tập Quiz, Lab, ASM... học viên mới nộp thêm trong tuần"),
             "BÀI_TẬP_CÒN_THIẾU": st.column_config.TextColumn("Bài Tập Còn Thiếu (Quiz/Lab/ASM...)", width="medium"),
             "ACTION_SUGGESTION": st.column_config.TextColumn("💡 Action Gợi Ý Cụ Thể Cho Hannah", width="large")
         }
