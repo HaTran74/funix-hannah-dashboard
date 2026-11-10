@@ -1013,14 +1013,11 @@ with tab0:
     concl_col1, concl_col2 = st.columns(2)
 
     with concl_col1:
-        if act_h1_pct >= 60.0:
-            act_note = f"<b>Team Hannah đã làm rất tốt việc kéo học viên quay lại hệ thống</b>. Tỷ lệ học viên hoạt động đạt <b>{act_h1_pct:.2f}%</b> ({act_h1_cnt:,}/{tot_h1_kpi:,} học viên có Activity)."
-        else:
-            act_note = f"Tỷ lệ học viên hoạt động tuần này đạt <b>{act_h1_pct:.2f}%</b> ({act_h1_cnt:,}/{tot_h1_kpi:,} học viên). Hannah cần tiếp tục đôn đốc tăng cường tần suất vào học."
+        act_note = f"Tỷ lệ học viên hoạt động đạt <b>{act_h1_pct:.2f}%</b> ({act_h1_cnt:,}/{tot_h1_kpi:,} học viên có Activity)."
         
         st.markdown(f"""
         <div style="background-color: #f0fdf4; border-left: 5px solid #16a34a; padding: 16px 20px; border-radius: 8px; margin-bottom: 12px; height: 100%;">
-            <h5 style="color: #166534; margin: 0 0 10px 0; font-size: 15px; font-weight: 700;">⚡ 1. Về tinh thần học tập chung (Activity Rate):</h5>
+            <h5 style="color: #166534; margin: 0 0 10px 0; font-size: 15px; font-weight: 700;">⚡ 1. Hoạt động học tập chung (Activity Rate):</h5>
             <ul style="color: #15803d; margin: 0; padding-left: 20px; font-size: 14px; line-height: 1.6;">
                 <li>{act_note}</li>
                 <li>Mục tiêu Benchmark đề ra là <b>70.0%</b> (hiện đang {'vượt chỉ tiêu' if act_h1_pct >= 70.0 else f'còn cách mục tiêu {70.0 - act_h1_pct:.1f}%'}).</li>
