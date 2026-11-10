@@ -2057,7 +2057,7 @@ with tab5:
 
             action_cols = [
                 "WEEK", "MSSV", "FULL_NAME", "HANNAH", "MÔN_ĐANG_HỌC",
-                "CHUYỂN_BIẾN_TUẦN_NÀY", "ACTION_TUẦN_TRƯỚC",
+                "CHUYỂN_BIẾN_TUẦN_NÀY", "SẢN_PHẨM_TUẦN_NÀY", "ACTION_TUẦN_TRƯỚC",
                 "INACTIVITY_WEEKS", "ROOT_CAUSE", "ACTION_SUGGESTION",
                 "Trạng thái xử lý tuần này", "Ghi chú Action tuần này"
             ]
@@ -2076,6 +2076,7 @@ with tab5:
                     "HANNAH": st.column_config.TextColumn("Hannah", disabled=True, width="small"),
                     "MÔN_ĐANG_HỌC": st.column_config.TextColumn("Môn", disabled=True, width="small"),
                     "CHUYỂN_BIẾN_TUẦN_NÀY": st.column_config.TextColumn("Chuyển Biến Tuần Này (vs Tuần Trước)", disabled=True, width="medium"),
+                    "SẢN_PHẨM_TUẦN_NÀY": st.column_config.TextColumn("📝 Bài Nộp Tuần Này", disabled=True, width="medium", help="Bài tập Quiz, Lab, ASM... học viên mới làm trong tuần"),
                     "ACTION_TUẦN_TRƯỚC": st.column_config.TextColumn("Lịch Sử Action Tuần Trước", disabled=True, width="large"),
                     "INACTIVITY_WEEKS": st.column_config.NumberColumn("Số Tuần Dừng", disabled=True, width="small"),
                     "ROOT_CAUSE": st.column_config.TextColumn("Nguyên Nhân Cốt Lõi", disabled=True, width="medium"),
