@@ -399,16 +399,21 @@ with col_rf1:
         st.cache_data.clear()
         st.rerun()
 with col_rf2:
-    if st.button("🚀 Push Git", help="Đẩy code app.py lên GitHub Repository"):
-        try:
-            from sync_github import sync_to_github
-            with st.spinner("Đang đẩy lên GitHub..."):
-                if sync_to_github("Update app.py via Dashboard button"):
-                    st.sidebar.success("✅ Đã push Git thành công!")
-                else:
-                    st.sidebar.error("❌ Chưa cấu hình Token hoặc lỗi kết nối.")
-        except Exception as e:
-            st.sidebar.error(f"Lỗi: {e}")
+    if st.button("🚀 Push Git", help="Đẩy code app.py lên GitHub Repository (Chế độ Local)"):
+        # Nhận diện nếu đang chạy trên Streamlit Cloud
+        is_cloud = os.path.exists("/mount/src") or "STREAMLIT_SERVER_BASE_URL_PATH" in os.environ
+        if is_cloud:
+            st.sidebar.info("☁️ Ứng dụng đang chạy trên Streamlit Cloud (đã đồng bộ tự động từ GitHub). Để cập nhật dữ liệu mới từ Google Sheets, bạn chỉ cần bấm nút **🔄 Làm mới**.")
+        else:
+            try:
+                from sync_github import sync_to_github
+                with st.spinner("Đang đẩy lên GitHub..."):
+                    if sync_to_github("Update app.py via Dashboard button"):
+                        st.sidebar.success("✅ Đã push Git thành công!")
+                    else:
+                        st.sidebar.error("❌ Chưa cấu hình Token hoặc lỗi kết nối.")
+            except Exception as e:
+                st.sidebar.error(f"Lỗi: {e}")
 
 with st.spinner("Đang tải dữ liệu từ Google Sheets Master Data & Survey..."):
     df_raw, load_err = load_data_from_google_sheet(MASTER_DATA_SHEET_ID, TARGET_SHEET_NAME)
