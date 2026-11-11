@@ -417,9 +417,10 @@ with col_rf2:
             except Exception as e:
                 st.sidebar.error(f"Lỗi: {e}")
 
-with st.spinner("Đang tải dữ liệu từ Google Sheets Master Data & Survey..."):
+with st.spinner("Đang tải dữ liệu từ Google Sheets Master Data, Survey & Ticket..."):
     df_raw, load_err = load_data_from_google_sheet(MASTER_DATA_SHEET_ID, TARGET_SHEET_NAME)
     df_survey_raw, survey_err = load_data_from_google_sheet(MASTER_DATA_SHEET_ID, SURVEY_SHEET_NAME)
+    df_ticket_raw, ticket_err = load_data_from_google_sheet(MASTER_DATA_SHEET_ID, TICKET_SHEET_NAME)
 
 if df_raw is not None and not df_raw.empty:
     st.sidebar.success(f"✅ Đã kết nối Master Data: **{len(df_raw):,}** dòng")
@@ -427,6 +428,10 @@ if df_raw is not None and not df_raw.empty:
         st.sidebar.info(f"📋 Dữ liệu Khảo Sát: **{len(df_survey_raw):,}** phản hồi")
     else:
         st.sidebar.warning("ℹ️ Sheet 'Survey' chưa có dữ liệu phản hồi.")
+    if df_ticket_raw is not None and not df_ticket_raw.empty:
+        st.sidebar.info(f"🎫 Dữ liệu Ticket ISO: **{len(df_ticket_raw):,}** dòng")
+    else:
+        st.sidebar.warning("ℹ️ Sheet 'Ticket' chưa có dữ liệu phản hồi.")
 else:
     st.sidebar.error("⚠️ Không thể tải dữ liệu từ Google Sheets.")
     st.stop()
