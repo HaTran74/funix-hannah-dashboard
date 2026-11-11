@@ -66,6 +66,7 @@ NOTES_DB_FILE = "action_notes_db.json"
 MASTER_DATA_SHEET_ID = "1OlBnpQMEA02X1OTYVhuIb_j1xrTjvFcwZl4EzvWyn04"
 TARGET_SHEET_NAME = "HANNAH_ACTION_BOARD_Test"
 SURVEY_SHEET_NAME = "Survey"
+TICKET_SHEET_NAME = "Ticket"
 EVAL_COLS = ["QUIZ", "LAB", "ASSIGNMENT", "PROGRESS_TEST", "FINAL_EXAM"]
 
 # ==================== CƠ SỞ DỮ LIỆU LƯU GHI CHÚ ACTION ====================
