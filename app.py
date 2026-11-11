@@ -782,7 +782,49 @@ with tab0:
             if len(h_scores) > 0:
                 csat_hannah_pct = (h_scores >= 4).sum() / len(h_scores) * 100
 
-    # KPI 5: Quy mô & Cứu nguy
+    # KPI 5: Xử lý Ticket vận hành chuẩn ISO
+    df_ticket_flt = pd.DataFrame()
+    tot_ticket_recv = 0
+    tot_ticket_done = 0
+    tot_ticket_proc = 0
+    tot_ticket_wait = 0
+    ticket_done_pct = None
+    ticket_avg_time = "N/A"
+
+    if df_ticket_raw is not None and not df_ticket_raw.empty:
+        df_t = df_ticket_raw.copy()
+        first_t_col = df_t.columns[0]
+        df_t.rename(columns={first_t_col: "WEEK"}, inplace=True)
+        df_t["QUARTER"] = df_t["WEEK"].apply(get_quarter_from_week)
+
+        for num_c, orig_c in [("TỔNG_NHẬN", "Tổng nhận"), ("ĐÃ_XONG", "Đã hoàn thành"), ("CHỜ_HV", "Chờ HV phản hồi"), ("ĐANG_XỬ_LÝ", "Đang xử lý")]:
+            if orig_c in df_t.columns:
+                df_t[num_c] = pd.to_numeric(df_t[orig_c], errors="coerce").fillna(0).astype(int)
+            else:
+                df_t[num_c] = 0
+
+        # Lọc theo kỳ
+        if selected_week != "Tất cả tuần trong Quý":
+            df_ticket_flt = df_t[df_t["WEEK"] == selected_week].copy()
+        elif selected_quarter != "Tất cả các Quý":
+            df_ticket_flt = df_t[df_t["QUARTER"] == selected_quarter].copy()
+        else:
+            df_ticket_flt = df_t.copy()
+
+        tot_ticket_recv = int(df_ticket_flt["TỔNG_NHẬN"].sum())
+        tot_ticket_done = int(df_ticket_flt["ĐÃ_XONG"].sum())
+        tot_ticket_proc = int(df_ticket_flt["ĐANG_XỬ_LÝ"].sum())
+        tot_ticket_wait = int(df_ticket_flt["CHỜ_HV"].sum())
+
+        if tot_ticket_recv > 0:
+            ticket_done_pct = round(tot_ticket_done / tot_ticket_recv * 100.0, 1)
+
+        if "Thời gian xử lý TB" in df_ticket_flt.columns:
+            valid_times = df_ticket_flt["Thời gian xử lý TB"].dropna().tolist()
+            if valid_times:
+                ticket_avg_time = str(valid_times[0])
+
+    # KPI 6: Quy mô & Cứu nguy
     urgent_cnt = (df_h1_tab0["RISK_LEVEL"].isin(["HIGH", "CRITICAL"])).sum() if tot_h1_kpi > 0 else 0
     if "CHUYỂN_BIẾN_TUẦN_NÀY" in df_h1_tab0.columns:
         recov_cnt = len(df_h1_tab0[df_h1_tab0["CHUYỂN_BIẾN_TUẦN_NÀY"].str.contains("Đã cải thiện", na=False)])
@@ -793,12 +835,12 @@ with tab0:
     team_recov_rate = (recov_cnt / (recov_cnt + stag_cnt) * 100) if (recov_cnt + stag_cnt) > 0 else 0.0
 
     # =========================================================================
-    # PHẦN 1: BỘ 3 CHỈ SỐ CỐT LÕI (ACTIVITY, TIẾN ĐỘ HỌC TẬP & SỰ HÀI LÒNG)
+    # PHẦN 1: BỘ 4 CHỈ SỐ CỐT LÕI (ACTIVITY, TIẾN ĐỘ, HÀI LÒNG & XỬ LÝ TICKET)
     # =========================================================================
-    st.markdown("### 🏆 1. Tương Tác, Tiến Độ Học Thuật & Mức Độ Hài Lòng")
-    st.caption("Bộ 3 chỉ số then chốt theo dõi nhịp học tập hàng tuần của học viên Tag H1 và chất lượng dịch vụ đào tạo theo Quý.")
+    st.markdown("### 🏆 1. Tương Tác, Tiến Độ Học Thuật, Sự Hài Lòng & Vận Hành Ticket")
+    st.caption("Bộ 4 chỉ số then chốt đo lường toàn diện: **Tương tác học viên**, **Tiến độ học thuật**, **Mức độ hài lòng (CSAT)** và **Năng lực giải quyết sự cố (Ticket ISO)**.")
 
-    k1, k2, k3 = st.columns(3)
+    k1, k2, k3, k4 = st.columns(4)
 
     with k1:
         st.metric(
@@ -848,7 +890,30 @@ with tab0:
             )
             st.info("ℹ️ Đang chờ dữ liệu khảo sát Quý")
 
-    # Biểu đồ so sánh 3 chỉ số cốt lõi vs Benchmark
+    with k4:
+        if ticket_done_pct is not None:
+            target_ticket = 95.0
+            diff_ticket = ticket_done_pct - target_ticket
+            st.metric(
+                label="🎫 4. Xử Lý Ticket Vận Hành (ISO)",
+                value=f"{ticket_done_pct:.1f}%",
+                delta=f"{diff_ticket:+.1f}% vs Target 95%",
+                delta_color="normal" if diff_ticket >= 0 else "inverse",
+                help=f"Dựa trên {tot_ticket_recv} ticket tiếp nhận trong kỳ. Đã xử lý: {tot_ticket_done}, Đang xử lý: {tot_ticket_proc}, Chờ HV: {tot_ticket_wait}. TG xử lý TB: {ticket_avg_time}. Mục tiêu ISO: >= 95.0%."
+            )
+            if ticket_done_pct >= target_ticket:
+                st.success(f"🟢 Đạt chuẩn SLA ({tot_ticket_done}/{tot_ticket_recv} ticket)")
+            else:
+                st.warning(f"🟡 Cần đẩy nhanh ({tot_ticket_proc} ticket đang tồn)")
+        else:
+            st.metric(
+                label="🎫 4. Xử Lý Ticket Vận Hành (ISO)",
+                value="N/A",
+                delta="Chưa có ticket"
+            )
+            st.info("ℹ️ Đang cập nhật dữ liệu Ticket")
+
+    # Biểu đồ so sánh 4 chỉ số cốt lõi vs Benchmark
     c_core1, c_core2 = st.columns([3, 2])
 
     with c_core1:
@@ -859,6 +924,10 @@ with tab0:
         if csat_pct is not None:
             kpi_core_data.append({
                 "CHỈ SỐ": "3. Hài Lòng CSAT (Quý)", "THỰC TẾ (%)": round(csat_pct, 1), "BENCHMARK (%)": 75.0, "TRẠNG THÁI": "ĐẠT CHUẨN" if csat_pct >= 75.0 else "CHƯA ĐẠT"
+            })
+        if ticket_done_pct is not None:
+            kpi_core_data.append({
+                "CHỈ SỐ": "4. Ticket Xong (ISO)", "THỰC TẾ (%)": round(ticket_done_pct, 1), "BENCHMARK (%)": 95.0, "TRẠNG THÁI": "ĐẠT CHUẨN" if ticket_done_pct >= 95.0 else "CHƯA ĐẠT"
             })
 
         df_core_bar = pd.DataFrame(kpi_core_data)
@@ -878,7 +947,7 @@ with tab0:
             text="GIÁ_TRỊ",
             color_discrete_map={"THỰC TẾ (%)": "#1f77b4", "BENCHMARK (%)": "#ff7f0e"},
             height=290,
-            title="So Sánh 3 Chỉ Số Cốt Lõi: Thực Tế (%) vs Benchmark Mục Tiêu (%)"
+            title="So Sánh 4 Chỉ Số Cốt Lõi: Thực Tế (%) vs Benchmark Mục Tiêu (%)"
         )
         fig_core_bench.update_layout(
             margin=dict(l=10, r=10, t=35, b=10),
