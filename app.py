@@ -2236,7 +2236,8 @@ with tab5:
         st.markdown("---")
 
         # BỘ LỌC NHANH TRÊN ACTION BOARD
-        f_col1, f_col2 = st.columns([2, 1])
+        all_act_hannahs = sorted([h for h in df_urgent_h1["HANNAH"].unique().tolist() if h and h != "N/A"])
+        f_col1, f_col2, f_col3 = st.columns([1.5, 1.2, 1.3])
         with f_col1:
             selected_recovery_filter = st.multiselect(
                 "Lọc theo chuyển biến học tập:",
@@ -2254,9 +2255,18 @@ with tab5:
                 ]
             )
         with f_col2:
-            search_act = st.text_input("🔍 Tìm MSSV hoặc tên học viên can thiệp:", placeholder="Nhập tên hoặc MSSV...")
+            sel_act_hannah = st.selectbox(
+                "Chọn Hannah phụ trách:",
+                ["Tất cả Hannah"] + all_act_hannahs,
+                index=0,
+                key="sel_act_hannah_tab5"
+            )
+        with f_col3:
+            search_act = st.text_input("🔍 Tìm MSSV hoặc tên học viên can thiệp:", placeholder="Nhập tên hoặc MSSV...", key="search_act_tab5")
 
         df_filtered_act = df_urgent_h1[df_urgent_h1["CHUYỂN_BIẾN_TUẦN_NÀY"].isin(selected_recovery_filter)].copy()
+        if sel_act_hannah != "Tất cả Hannah":
+            df_filtered_act = df_filtered_act[df_filtered_act["HANNAH"] == sel_act_hannah]
         if search_act:
             q_a = search_act.strip().lower()
             df_filtered_act = df_filtered_act[
