@@ -1911,81 +1911,110 @@ with tab4:
     st.markdown("---")
 
     # -------------------------------------------------------------
-    # KHỐI 3: SO SÁNH HIỆU QUẢ CHUYỂN HÓA THEO TỪNG HANNAH
+    # KHỐI 3: HIỆU QUẢ CHUYỂN HÓA HỌC TẬP TỔNG THỂ TOÀN TRƯỜNG
     # -------------------------------------------------------------
-    st.markdown(f"##### 👩‍💼 3. So Sánh Hiệu Quả Chuyển Hóa Học Tập Giữa Các Hannah ({period_label})")
+    st.markdown(f"##### 📊 3. Hiệu Quả Chuyển Hóa Học Tập Tổng Thể Toàn Trường ({period_label})")
+    st.caption("Đo lường tổng hợp toàn bộ học viên Tag H1 theo 4 hành vi học thuật: **Vào LMS ➔ Dùng Mentor ➔ Nộp bài thành công ➔ Kẹt tiến độ** qua các tuần.")
 
-    h_pipe = df_deep.groupby("HANNAH").apply(lambda g: pd.Series({
-        "TỔNG_HV": len(g),
-        "HV_VÀO_LMS": (g["LEARNING_ACCESS"] > 0).sum(),
-        "%_VÀO_LMS": round((g["LEARNING_ACCESS"] > 0).sum() / len(g) * 100, 1),
-        "HV_HỎI_MENTOR": (g["MENTOR_SUPPORT"] > 0).sum(),
-        "%_DÙNG_MENTOR": round((g["MENTOR_SUPPORT"] > 0).sum() / len(g) * 100, 1),
-        "HV_NỘP_BÀI": (g["ACADEMIC_OUTPUT"] > 0).sum(),
-        "%_NỘP_BÀI": round((g["ACADEMIC_OUTPUT"] > 0).sum() / len(g) * 100, 1),
-        "HV_KẸT_TIẾN_ĐỘ": ((g["LEARNING_ACCESS"] > 0) & (g["ACADEMIC_OUTPUT"] == 0)).sum(),
-        "HV_BẤT_ĐỘNG": (g["TOTAL_ACTIVITY"] == 0).sum(),
-        "TỔNG_SẢN_PHẨM": int(g["ACADEMIC_OUTPUT"].sum()),
-        "TỶ_LỆ_CHUYỂN_HÓA": round((g["ACADEMIC_OUTPUT"] > 0).sum() / max((g["LEARNING_ACCESS"] > 0).sum(), 1) * 100, 1)
-    })).reset_index()
+    # Lấy dữ liệu học viên Tag H1 để đo xu hướng tổng thể toàn trường
+    df_h1_scope = df_clean[df_clean["TAG_CODE"] == "H1"].copy() if "TAG_CODE" in df_clean.columns else df_clean.copy()
+    if selected_quarter != "Tất cả các Quý":
+        df_h1_scope = df_h1_scope[df_h1_scope["QUARTER"] == selected_quarter]
+
+    weeks_scope = sorted(df_h1_scope["WEEK"].unique().tolist())
+
+    pipe_rows = []
+    for wk in weeks_scope:
+        grp = df_h1_scope[df_h1_scope["WEEK"] == wk]
+        tot_wk = len(grp)
+        acc_wk = (grp["LEARNING_ACCESS"] > 0).sum()
+        men_wk = (grp["MENTOR_SUPPORT"] > 0).sum()
+        out_wk = (grp["ACADEMIC_OUTPUT"] > 0).sum()
+        stuck_wk = ((grp["LEARNING_ACCESS"] > 0) & (grp["ACADEMIC_OUTPUT"] == 0)).sum()
+        inact_wk = (grp["TOTAL_ACTIVITY"] == 0).sum()
+        tot_prod = int(grp["ACADEMIC_OUTPUT"].sum())
+        conv_wk = (out_wk / acc_wk * 100) if acc_wk > 0 else 0.0
+
+        pipe_rows.append({
+            "TUẦN": wk,
+            "TỔNG_HV": tot_wk,
+            "HV_VÀO_LMS": acc_wk,
+            "%_VÀO_LMS": round(acc_wk / tot_wk * 100, 1) if tot_wk > 0 else 0.0,
+            "HV_HỎI_MENTOR": men_wk,
+            "%_DÙNG_MENTOR": round(men_wk / tot_wk * 100, 1) if tot_wk > 0 else 0.0,
+            "HV_NỘP_BÀI": out_wk,
+            "%_NỘP_BÀI": round(out_wk / tot_wk * 100, 1) if tot_wk > 0 else 0.0,
+            "HV_KẸT_TIẾN_ĐỘ": stuck_wk,
+            "HV_BẤT_ĐỘNG": inact_wk,
+            "TỔNG_SẢN_PHẨM": tot_prod,
+            "TỶ_LỆ_CHUYỂN_HÓA": round(conv_wk, 1)
+        })
+
+    df_pipe_trend = pd.DataFrame(pipe_rows)
 
     h_col1, h_col2 = st.columns([1.2, 0.8])
 
     with h_col1:
-        st.markdown("###### 📊 Khối Lượng Hành Vi Học Tập Từng Hannah")
-        h_pipe_melted = h_pipe.melt(
-            id_vars="HANNAH",
-            value_vars=["HV_VÀO_LMS", "HV_HỎI_MENTOR", "HV_NỘP_BÀI", "HV_KẸT_TIẾN_ĐỘ"],
-            var_name="LOẠI_HÀNH_VI",
-            value_name="SỐ_HV"
-        )
-        h_pipe_melted["LOẠI_HÀNH_VI"] = h_pipe_melted["LOẠI_HÀNH_VI"].map({
-            "HV_VÀO_LMS": "1. Vào học LMS",
-            "HV_HỎI_MENTOR": "2. Dùng Mentor",
-            "HV_NỘP_BÀI": "3. Nộp bài thành công",
-            "HV_KẸT_TIẾN_ĐỘ": "⚠️ Kẹt bài (Chưa nộp)"
-        })
+        st.markdown("###### 📈 Xu Hướng Khối Lượng Hành Vi Học Tập Toàn Trường Qua Các Tuần")
+        if not df_pipe_trend.empty:
+            df_trend_melted = df_pipe_trend.melt(
+                id_vars="TUẦN",
+                value_vars=["HV_VÀO_LMS", "HV_HỎI_MENTOR", "HV_NỘP_BÀI", "HV_KẸT_TIẾN_ĐỘ"],
+                var_name="LOẠI_HÀNH_VI",
+                value_name="SỐ_HV"
+            )
+            df_trend_melted["LOẠI_HÀNH_VI"] = df_trend_melted["LOẠI_HÀNH_VI"].map({
+                "HV_VÀO_LMS": "1. Vào học LMS",
+                "HV_HỎI_MENTOR": "2. Dùng Mentor",
+                "HV_NỘP_BÀI": "3. Nộp bài thành công",
+                "HV_KẸT_TIẾN_ĐỘ": "⚠️ Kẹt bài (Chưa nộp)"
+            })
 
-        fig_h_pipe = px.bar(
-            h_pipe_melted,
-            x="HANNAH",
-            y="SỐ_HV",
-            color="LOẠI_HÀNH_VI",
-            barmode="group",
-            text="SỐ_HV",
-            color_discrete_map={
-                "1. Vào học LMS": "#1c7ed6",
-                "2. Dùng Mentor": "#7950f2",
-                "3. Nộp bài thành công": "#0ca678",
-                "⚠️ Kẹt bài (Chưa nộp)": "#f59f00"
-            },
-            height=320
-        )
-        fig_h_pipe.update_traces(textposition="outside")
-        fig_h_pipe.update_layout(
-            margin=dict(l=10, r=10, t=10, b=10),
-            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
-        )
-        st.plotly_chart(fig_h_pipe, use_container_width=True)
+            fig_trend_pipe = px.bar(
+                df_trend_melted,
+                x="TUẦN",
+                y="SỐ_HV",
+                color="LOẠI_HÀNH_VI",
+                barmode="group",
+                text="SỐ_HV",
+                color_discrete_map={
+                    "1. Vào học LMS": "#1c7ed6",
+                    "2. Dùng Mentor": "#7950f2",
+                    "3. Nộp bài thành công": "#0ca678",
+                    "⚠️ Kẹt bài (Chưa nộp)": "#f59f00"
+                },
+                height=320
+            )
+            fig_trend_pipe.update_traces(textposition="outside")
+            fig_trend_pipe.update_layout(
+                margin=dict(l=10, r=10, t=10, b=10),
+                legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
+            )
+            st.plotly_chart(fig_trend_pipe, use_container_width=True)
+        else:
+            st.info("Chưa có dữ liệu xu hướng học thuật.")
 
     with h_col2:
-        st.markdown("###### 📋 Bảng So Sánh Chi Tiết")
-        st.dataframe(
-            h_pipe[[
-                "HANNAH", "TỔNG_HV", "%_VÀO_LMS", "%_DÙNG_MENTOR",
-                "%_NỘP_BÀI", "HV_KẸT_TIẾN_ĐỘ", "TỔNG_SẢN_PHẨM"
-            ]].rename(columns={
-                "HANNAH": "Hannah",
-                "TỔNG_HV": "Tổng HV",
-                "%_VÀO_LMS": "% Vào LMS",
-                "%_DÙNG_MENTOR": "% Mentor",
-                "%_NỘP_BÀI": "% Nộp bài",
-                "HV_KẸT_TIẾN_ĐỘ": "⚠️ Kẹt bài",
-                "TỔNG_SẢN_PHẨM": "Bài đạt"
-            }),
-            use_container_width=True,
-            hide_index=True
-        )
+        st.markdown("###### 📋 Bảng Tổng Hợp Chuyển Hóa Học Thuật Toàn Trường")
+        if not df_pipe_trend.empty:
+            st.dataframe(
+                df_pipe_trend[[
+                    "TUẦN", "TỔNG_HV", "%_VÀO_LMS", "%_DÙNG_MENTOR",
+                    "%_NỘP_BÀI", "HV_KẸT_TIẾN_ĐỘ", "TỔNG_SẢN_PHẨM"
+                ]].rename(columns={
+                    "TUẦN": "Tuần",
+                    "TỔNG_HV": "Tổng HV",
+                    "%_VÀO_LMS": "% Vào LMS",
+                    "%_DÙNG_MENTOR": "% Mentor",
+                    "%_NỘP_BÀI": "% Nộp Bài",
+                    "HV_KẸT_TIẾN_ĐỘ": "⚠️ Kẹt Bài",
+                    "TỔNG_SẢN_PHẨM": "Bài Đạt"
+                }),
+                use_container_width=True,
+                hide_index=True
+            )
+        else:
+            st.info("Chưa có dữ liệu bảng chuyển hóa.")
 
     st.markdown("---")
 
