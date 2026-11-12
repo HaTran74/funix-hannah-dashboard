@@ -996,6 +996,32 @@ with tab0:
         else:
             st.info("ℹ️ Đang chờ dữ liệu khảo sát Quý")
 
+    # Bảng phân tích chi tiết Ticket Vận Hành (ISO)
+    if not df_ticket_flt.empty and tot_ticket_recv > 0:
+        with st.expander(f"📋 **BÁO CÁO CHI TIẾT TÌNH HÌNH XỬ LÝ TICKET VẬN HÀNH ({period_title} - CHUẨN ISO)** — Nhấp để xem", expanded=False):
+            t_col1, t_col2 = st.columns([1, 1])
+            with t_col1:
+                st.markdown("###### 🏢 Phân Bổ Khối Lượng Ticket Theo Bộ Phận Xử Lý")
+                df_t_dept = df_ticket_flt.groupby("Bộ phận xử lý")[["TỔNG_NHẬN", "ĐÃ_XONG", "ĐANG_XỬ_LÝ", "CHỜ_HV"]].sum().reset_index()
+                df_t_dept["TỶ_LỆ_XONG (%)"] = round(df_t_dept["ĐÃ_XONG"] / df_t_dept["TỔNG_NHẬN"] * 100, 1)
+                st.dataframe(
+                    df_t_dept.rename(columns={
+                        "Bộ phận xử lý": "Bộ Phận", "TỔNG_NHẬN": "Tổng Nhận",
+                        "ĐÃ_XONG": "Đã Xong", "ĐANG_XỬ_LÝ": "Đang Xử Lý", "CHỜ_HV": "Chờ HV", "TỶ_LỆ_XONG (%)": "% Hoàn Thành"
+                    }),
+                    use_container_width=True, hide_index=True
+                )
+            with t_col2:
+                st.markdown("###### 🔍 Chi Tiết Loại Sự Cố & Môn Học Phát Sinh Ticket")
+                for _, r_t in df_ticket_flt.iterrows():
+                    dept_name = r_t.get("Bộ phận xử lý", "")
+                    loai_t = str(r_t.get("Chi tiết Loại ticket", "")).strip()
+                    mon_t = str(r_t.get("Chi tiết Môn học phát sinh ticket", "")).strip()
+                    if loai_t and loai_t != "nan":
+                        st.markdown(f"• **[{dept_name}] Sự cố:** {loai_t}")
+                    if mon_t and mon_t != "nan":
+                        st.caption(f"  *Môn học:* {mon_t}")
+
     st.markdown("---")
 
     # =========================================================================
