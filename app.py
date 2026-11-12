@@ -2342,21 +2342,28 @@ with tab5:
 
             col_s1, col_s2 = st.columns([1, 4])
             with col_s1:
-                if st.button("💾 Lưu Action Notes Tuần Này", type="primary"):
+                if st.button("💾 Lưu Action Notes Tuần Này", type="primary", key="btn_save_urgent_notes"):
+                    latest_notes = load_notes_db()
                     saved_count = 0
                     for _, row in edited_h1_board.iterrows():
                         target_row_w = row.get("WEEK", selected_week) if selected_week == "Tất cả tuần trong Quý" else selected_week
                         key = f"{target_row_w}_{row.get('MSSV', '')}"
-                        notes_db[key] = {
-                            "note": row.get("Ghi chú Action tuần này", ""),
-                            "status": row.get("Trạng thái xử lý tuần này", "Chưa liên hệ"),
-                            "hannah": row.get("HANNAH", ""),
-                            "student_name": row.get("FULL_NAME", ""),
-                            "recovery_status": row.get("CHUYỂN_BIẾN_TUẦN_NÀY", "")
-                        }
-                        saved_count += 1
-                    if save_notes_db(notes_db):
+                        note_val = str(row.get("Ghi chú Action tuần này", "")).strip()
+                        status_val = str(row.get("Trạng thái xử lý tuần này", "Chưa liên hệ")).strip()
+                        if note_val or status_val != "Chưa liên hệ" or key in latest_notes:
+                            latest_notes[key] = {
+                                "note": note_val,
+                                "status": status_val,
+                                "hannah": row.get("HANNAH", ""),
+                                "student_name": row.get("FULL_NAME", ""),
+                                "recovery_status": row.get("CHUYỂN_BIẾN_TUẦN_NÀY", ""),
+                                "updated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                            }
+                            saved_count += 1
+                    if save_notes_db(latest_notes):
+                        notes_db.update(latest_notes)
                         st.success(f"✅ Đã lưu thành công ghi chú cho {saved_count} học viên!")
+                        st.rerun()
 
             with col_s2:
                 excel_act_buf = io.BytesIO()
@@ -2373,8 +2380,21 @@ with tab5:
 
     st.markdown("---")
     st.subheader("📋 Tra Cứu Toàn Bộ Học Viên H1")
-    search_h1 = st.text_input("🔍 Tìm kiếm học viên H1 (theo MSSV, Họ tên, Email, Môn học):", placeholder="Gõ từ khóa để tra cứu...")
+    all_view_hannahs = sorted([h for h in df_deep["HANNAH"].unique().tolist() if h and h != "N/A"])
+    q_col1, q_col2 = st.columns([1, 2])
+    with q_col1:
+        sel_view_hannah = st.selectbox(
+            "Chọn Hannah tra cứu:",
+            ["Tất cả Hannah"] + all_view_hannahs,
+            index=0,
+            key="sel_view_hannah_tab5"
+        )
+    with q_col2:
+        search_h1 = st.text_input("🔍 Tìm kiếm học viên H1 (theo MSSV, Họ tên, Email, Môn học):", placeholder="Gõ từ khóa để tra cứu...", key="search_all_h1_input")
+    
     df_all_h1_view = df_deep.copy()
+    if sel_view_hannah != "Tất cả Hannah":
+        df_all_h1_view = df_all_h1_view[df_all_h1_view["HANNAH"] == sel_view_hannah]
 
     if search_h1:
         q1 = search_h1.strip().lower()
