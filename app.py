@@ -1627,111 +1627,114 @@ with tab2:
 
     df_push_display = df_push_display.sort_values(by=["SỐ_MÔN_CÒN_LẠI", "TOTAL_ACTIVITY"], ascending=[True, False]).reset_index(drop=True)
 
-    # Gắn dữ liệu ghi chú tuần hiện tại đã lưu
-    curr_push_notes = []
-    curr_push_statuses = []
-    for _, r in df_push_display.iterrows():
-        target_w = r.get("WEEK", selected_week) if selected_week == "Tất cả tuần trong Quý" else selected_week
-        key_curr = f"{target_w}_{r.get('MSSV', '')}"
-        saved = notes_db.get(key_curr, {})
-        curr_push_notes.append(saved.get("note", ""))
-        curr_push_statuses.append(saved.get("status", "Chưa liên hệ"))
+    if df_push_display.empty:
+        st.info("ℹ️ Không tìm thấy học viên nào phù hợp với bộ lọc nhóm hoàn thành hoặc Hannah đã chọn.")
+    else:
+        # Gắn dữ liệu ghi chú tuần hiện tại đã lưu
+        curr_push_notes = []
+        curr_push_statuses = []
+        for _, r in df_push_display.iterrows():
+            target_w = r.get("WEEK", selected_week) if selected_week == "Tất cả tuần trong Quý" else selected_week
+            key_curr = f"{target_w}_{r.get('MSSV', '')}"
+            saved = notes_db.get(key_curr, {})
+            curr_push_notes.append(saved.get("note", ""))
+            curr_push_statuses.append(saved.get("status", "Chưa liên hệ"))
 
-    df_push_display["Trạng thái xử lý tuần này"] = curr_push_statuses
-    df_push_display["Ghi chú Action tuần này"] = curr_push_notes
+        df_push_display["Trạng thái xử lý tuần này"] = curr_push_statuses
+        df_push_display["Ghi chú Action tuần này"] = curr_push_notes
 
-    st.markdown(f"Có **{len(df_push_display):,}** học viên trong danh sách push trọng điểm:")
+        st.markdown(f"Có **{len(df_push_display):,}** học viên trong danh sách push trọng điểm:")
 
-    push_columns = [
-        "WEEK", "MSSV", "FULL_NAME", "HANNAH", "CHƯƠNG_TRÌNH", "MÔN_ĐANG_HỌC",
-        "SỐ_MÔN_CÒN_LẠI", "THÁNG_CÒN_LẠI", "TOTAL_ACTIVITY",
-        "KHẢ_NĂNG_HOÀN_THÀNH", "TIẾN_ĐỘ_HỌC_THUẬT", "SẢN_PHẨM_TUẦN_NÀY", "ACTION_TUẦN_TRƯỚC",
-        "BÀI_TẬP_CÒN_THIẾU", "ACTION_SUGGESTION",
-        "Trạng thái xử lý tuần này", "Ghi chú Action tuần này"
-    ]
-    valid_push_cols = [c for c in push_columns if c in df_push_display.columns]
+        push_columns = [
+            "WEEK", "MSSV", "FULL_NAME", "HANNAH", "CHƯƠNG_TRÌNH", "MÔN_ĐANG_HỌC",
+            "SỐ_MÔN_CÒN_LẠI", "THÁNG_CÒN_LẠI", "TOTAL_ACTIVITY",
+            "KHẢ_NĂNG_HOÀN_THÀNH", "TIẾN_ĐỘ_HỌC_THUẬT", "SẢN_PHẨM_TUẦN_NÀY", "ACTION_TUẦN_TRƯỚC",
+            "BÀI_TẬP_CÒN_THIẾU", "ACTION_SUGGESTION",
+            "Trạng thái xử lý tuần này", "Ghi chú Action tuần này"
+        ]
+        valid_push_cols = [c for c in push_columns if c in df_push_display.columns]
 
-    editor_push_key = f"push_editor_{str(selected_week).replace(' ', '_')}"
-    edited_push_board = st.data_editor(
-        df_push_display[valid_push_cols],
-        key=editor_push_key,
-        use_container_width=True,
-        hide_index=True,
-        column_config={
-            "WEEK": st.column_config.TextColumn("Tuần", disabled=True, width="small"),
-            "MSSV": st.column_config.TextColumn("MSSV", disabled=True, width="small"),
-            "FULL_NAME": st.column_config.TextColumn("Họ và Tên", disabled=True, width="medium"),
-            "HANNAH": st.column_config.TextColumn("Hannah", disabled=True, width="small"),
-            "CHƯƠNG_TRÌNH": st.column_config.TextColumn("Chương Trình", disabled=True, width="small"),
-            "MÔN_ĐANG_HỌC": st.column_config.TextColumn("Môn Đang Học", disabled=True, width="small"),
-            "SỐ_MÔN_CÒN_LẠI": st.column_config.NumberColumn("Môn Còn Lại", disabled=True, width="small"),
-            "THÁNG_CÒN_LẠI": st.column_config.TextColumn("Tháng Còn Lại", disabled=True, width="small"),
-            "TOTAL_ACTIVITY": st.column_config.NumberColumn("Activity Tuần", disabled=True, width="small"),
-            "KHẢ_NĂNG_HOÀN_THÀNH": st.column_config.TextColumn("Đánh Giá Hoàn Thành", disabled=True, width="medium"),
-            "TIẾN_ĐỘ_HỌC_THUẬT": st.column_config.ProgressColumn("Tiến Độ Môn", disabled=True, min_value=0, max_value=100, format="%.1f%%"),
-            "SẢN_PHẨM_TUẦN_NÀY": st.column_config.TextColumn("📝 Bài Nộp Tuần Này", disabled=True, width="medium", help="Bài tập Quiz, Lab, ASM... học viên mới nộp thêm trong tuần"),
-            "ACTION_TUẦN_TRƯỚC": st.column_config.TextColumn("Lịch Sử Action Tuần Trước", disabled=True, width="large"),
-            "BÀI_TẬP_CÒN_THIẾU": st.column_config.TextColumn("Bài Tập Còn Thiếu (Quiz/Lab/ASM...)", disabled=True, width="medium"),
-            "ACTION_SUGGESTION": st.column_config.TextColumn("💡 Action Gợi Ý Cụ Thể Cho Hannah", disabled=True, width="large"),
-            "Trạng thái xử lý tuần này": st.column_config.SelectboxColumn(
-                "Trạng thái xử lý tuần này",
-                options=[
-                    "Chưa liên hệ",
-                    "Đang gọi điện",
-                    "Đã nhắn tin Zalo",
-                    "Đã kết nối lại",
-                    "Hẹn lịch Mentor",
-                    "Báo phụ huynh / BQL",
-                    "Đã giải quyết"
-                ],
-                required=True,
-                width="medium"
-            ),
-            "Ghi chú Action tuần này": st.column_config.TextColumn(
-                "Ghi chú Action tuần này",
-                help="Gõ chi tiết kết quả push môn, cam kết làm bài của học viên...",
-                width="large"
-            )
-        }
-    )
-
-    col_p1, col_p2 = st.columns([1, 4])
-    with col_p1:
-        if st.button("💾 Lưu Ghi Chú Push Tuần Này", type="primary", key="btn_save_push_notes"):
-            latest_notes = load_notes_db()
-            saved_count = 0
-            for _, row in edited_push_board.iterrows():
-                target_row_w = row.get("WEEK", selected_week) if selected_week == "Tất cả tuần trong Quý" else selected_week
-                key = f"{target_row_w}_{row.get('MSSV', '')}"
-                note_val = str(row.get("Ghi chú Action tuần này", "")).strip()
-                status_val = str(row.get("Trạng thái xử lý tuần này", "Chưa liên hệ")).strip()
-                if note_val or status_val != "Chưa liên hệ" or key in latest_notes:
-                    latest_notes[key] = {
-                        "note": note_val,
-                        "status": status_val,
-                        "hannah": row.get("HANNAH", ""),
-                        "student_name": row.get("FULL_NAME", ""),
-                        "recovery_status": row.get("KHẢ_NĂNG_HOÀN_THÀNH", ""),
-                        "updated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                    }
-                    saved_count += 1
-            if save_notes_db(latest_notes):
-                notes_db.update(latest_notes)
-                st.success(f"✅ Đã lưu thành công ghi chú Push cho {saved_count} học viên!")
-                st.rerun()
-
-    with col_p2:
-        push_excel_buf = io.BytesIO()
-        with pd.ExcelWriter(push_excel_buf, engine="openpyxl") as writer:
-            edited_push_board.to_excel(writer, sheet_name="Danh_Sach_Push_Hoan_Thanh", index=False)
-        push_excel_data = push_excel_buf.getvalue()
-
-        st.download_button(
-            label="📥 Tải Danh Sách Học Viên Cần Push (Excel)",
-            data=push_excel_data,
-            file_name=f"Danh_Sach_Push_Hoan_Thanh_H1_{selected_week if selected_week != 'Tất cả tuần trong Quý' else selected_quarter}.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        editor_push_key = f"push_editor_{str(selected_week).replace(' ', '_')}"
+        edited_push_board = st.data_editor(
+            df_push_display[valid_push_cols],
+            key=editor_push_key,
+            use_container_width=True,
+            hide_index=True,
+            column_config={
+                "WEEK": st.column_config.TextColumn("Tuần", disabled=True, width="small"),
+                "MSSV": st.column_config.TextColumn("MSSV", disabled=True, width="small"),
+                "FULL_NAME": st.column_config.TextColumn("Họ và Tên", disabled=True, width="medium"),
+                "HANNAH": st.column_config.TextColumn("Hannah", disabled=True, width="small"),
+                "CHƯƠNG_TRÌNH": st.column_config.TextColumn("Chương Trình", disabled=True, width="small"),
+                "MÔN_ĐANG_HỌC": st.column_config.TextColumn("Môn Đang Học", disabled=True, width="small"),
+                "SỐ_MÔN_CÒN_LẠI": st.column_config.NumberColumn("Môn Còn Lại", disabled=True, width="small"),
+                "THÁNG_CÒN_LẠI": st.column_config.TextColumn("Tháng Còn Lại", disabled=True, width="small"),
+                "TOTAL_ACTIVITY": st.column_config.NumberColumn("Activity Tuần", disabled=True, width="small"),
+                "KHẢ_NĂNG_HOÀN_THÀNH": st.column_config.TextColumn("Đánh Giá Hoàn Thành", disabled=True, width="medium"),
+                "TIẾN_ĐỘ_HỌC_THUẬT": st.column_config.ProgressColumn("Tiến Độ Môn", min_value=0, max_value=100, format="%.1f%%"),
+                "SẢN_PHẨM_TUẦN_NÀY": st.column_config.TextColumn("📝 Bài Nộp Tuần Này", disabled=True, width="medium", help="Bài tập Quiz, Lab, ASM... học viên mới nộp thêm trong tuần"),
+                "ACTION_TUẦN_TRƯỚC": st.column_config.TextColumn("Lịch Sử Action Tuần Trước", disabled=True, width="large"),
+                "BÀI_TẬP_CÒN_THIẾU": st.column_config.TextColumn("Bài Tập Còn Thiếu (Quiz/Lab/ASM...)", disabled=True, width="medium"),
+                "ACTION_SUGGESTION": st.column_config.TextColumn("💡 Action Gợi Ý Cụ Thể Cho Hannah", disabled=True, width="large"),
+                "Trạng thái xử lý tuần này": st.column_config.SelectboxColumn(
+                    "Trạng thái xử lý tuần này",
+                    options=[
+                        "Chưa liên hệ",
+                        "Đang gọi điện",
+                        "Đã nhắn tin Zalo",
+                        "Đã kết nối lại",
+                        "Hẹn lịch Mentor",
+                        "Báo phụ huynh / BQL",
+                        "Đã giải quyết"
+                    ],
+                    required=True,
+                    width="medium"
+                ),
+                "Ghi chú Action tuần này": st.column_config.TextColumn(
+                    "Ghi chú Action tuần này",
+                    help="Gõ chi tiết kết quả push môn, cam kết làm bài của học viên...",
+                    width="large"
+                )
+            }
         )
+
+        col_p1, col_p2 = st.columns([1, 4])
+        with col_p1:
+            if st.button("💾 Lưu Ghi Chú Push Tuần Này", type="primary", key="btn_save_push_notes"):
+                latest_notes = load_notes_db()
+                saved_count = 0
+                for _, row in edited_push_board.iterrows():
+                    target_row_w = row.get("WEEK", selected_week) if selected_week == "Tất cả tuần trong Quý" else selected_week
+                    key = f"{target_row_w}_{row.get('MSSV', '')}"
+                    note_val = str(row.get("Ghi chú Action tuần này", "")).strip()
+                    status_val = str(row.get("Trạng thái xử lý tuần này", "Chưa liên hệ")).strip()
+                    if note_val or status_val != "Chưa liên hệ" or key in latest_notes:
+                        latest_notes[key] = {
+                            "note": note_val,
+                            "status": status_val,
+                            "hannah": row.get("HANNAH", ""),
+                            "student_name": row.get("FULL_NAME", ""),
+                            "recovery_status": row.get("KHẢ_NĂNG_HOÀN_THÀNH", ""),
+                            "updated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                        }
+                        saved_count += 1
+                if save_notes_db(latest_notes):
+                    notes_db.update(latest_notes)
+                    st.success(f"✅ Đã lưu thành công ghi chú Push cho {saved_count} học viên!")
+                    st.rerun()
+
+        with col_p2:
+            push_excel_buf = io.BytesIO()
+            with pd.ExcelWriter(push_excel_buf, engine="openpyxl") as writer:
+                edited_push_board.to_excel(writer, sheet_name="Danh_Sach_Push_Hoan_Thanh", index=False)
+            push_excel_data = push_excel_buf.getvalue()
+
+            st.download_button(
+                label="📥 Tải Danh Sách Học Viên Cần Push (Excel)",
+                data=push_excel_data,
+                file_name=f"Danh_Sach_Push_Hoan_Thanh_H1_{selected_week if selected_week != 'Tất cả tuần trong Quý' else selected_quarter}.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            )
 
 # =========================================================================
 # TAB 3: HIỆU SUẤT & TỶ LỆ CỨU NGUY HANNAH (H1) — ĐO LƯỜNG HIỆU QUẢ ACTION
