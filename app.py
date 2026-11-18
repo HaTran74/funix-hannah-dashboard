@@ -233,6 +233,18 @@ def normalize_dataset(df):
     df["QUARTER"] = df["WEEK"].apply(get_quarter_from_week)
     df["TAG_CODE"] = df["TAG"].apply(extract_tag_code)
 
+    # Loại bỏ các học viên mang tag phụ (H1.1 - chăm sóc phụ huynh Robotics, 1-F limited - Wing/xUp)
+    # bị hệ thống trích xuất gán nhầm chuỗi 'H1 - Đang hỗ trợ...' trong Master Data:
+    # Nhận diện chính xác qua dấu hiệu: Total Activity = 0, Last Activity Week = '-', Inactivity Weeks = 0
+    if "TOTAL_ACTIVITY" in df.columns and "LAST_ACTIVITY_WEEK" in df.columns and "INACTIVITY_WEEKS" in df.columns:
+        is_secondary_phantom = (
+            (df["TAG_CODE"] == "H1") & 
+            (pd.to_numeric(df["TOTAL_ACTIVITY"], errors="coerce").fillna(0) == 0) & 
+            (df["LAST_ACTIVITY_WEEK"].astype(str).str.strip().isin(["-", "nan", "None", ""])) & 
+            (pd.to_numeric(df["INACTIVITY_WEEKS"], errors="coerce").fillna(0) == 0)
+        )
+        df.loc[is_secondary_phantom, "TAG_CODE"] = "Chưa gán Tag"
+
     if "THÁNG_CÒN_LẠI" in df.columns:
         df["THÁNG_CÒN_LẠI_NUM"] = df["THÁNG_CÒN_LẠI"].apply(parse_decimal_vn)
     else:
