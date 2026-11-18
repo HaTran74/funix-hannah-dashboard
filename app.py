@@ -146,13 +146,73 @@ def get_quarter_from_week(week_str):
     return "Khác"
 
 def extract_tag_code(tag_str):
-    s = str(tag_str).strip()
-    for code in ["H2.1", "H2.2", "H0.1", "H0.2", "H1"]:
-        if s.startswith(code):
-            return code
-    if "-" in s:
-        return s.split("-")[0].strip()
-    return "Khác"
+    """
+    Bóc tách mã Tag chuẩn từ chuỗi Tags của học viên:
+    - 5 Tag chính: H0.1, H0.2, H1, H2.1, H2.2
+    - 2 Tag phụ (bỏ qua): H1.1, 1-F limited
+    
+    Quy tắc nghiệp vụ:
+    1. Bỏ qua các tag phụ (H1.1, 1-F limited).
+    2. Nếu có nhiều tag:
+       - Ưu tiên các tag trạng thái đặc thù: H0.1, H0.2, H2.1, H2.2 trước H1.
+         (Ví dụ học viên có cả H1 và H2.1 như FX30688 thì thuộc nhóm H2.1 - học lấy kiến thức, không nhắc tiến độ).
+       - Nếu có H1 (không phải H1.1) và không có tag đặc thù thì thuộc H1.
+    3. Phân biệt chính xác H1 và H1.1 (không dùng startswith('H1') vì H1.1 là tag phụ).
+    4. Nếu không có tag chính nào -> gán là 'Chưa gán Tag'.
+    """
+    if pd.isna(tag_str) or str(tag_str).strip() in ["", "-", "nan", "None", "N/A"]:
+        return "Chưa gán Tag"
+
+    raw = str(tag_str).strip()
+
+    # Tách các tag trong ô nếu có nhiều tag (ngăn cách bởi dấu phẩy, chấm phẩy, xuống dòng)
+    tag_parts = [p.strip() for p in re.split(r'[,;\n]+', raw) if p.strip()]
+    if not tag_parts:
+        tag_parts = [raw]
+
+    # 1. Lọc bỏ các tag phụ: H1.1, 1-F limited
+    filtered_parts = []
+    for t in tag_parts:
+        if t.startswith("H1.1") or "1-F" in t or "1-f" in t or "limited" in t.lower():
+            continue
+        filtered_parts.append(t)
+
+    # Nếu sau khi loại bỏ tag phụ mà không còn tag nào -> là Chưa gán Tag
+    if not filtered_parts:
+        return "Chưa gán Tag"
+
+    # 2. Tìm các tag chính xuất hiện trong danh sách tag còn lại
+    found_main_tags = set()
+    for t in filtered_parts:
+        if t.startswith("H2.1") or "H2.1" in t:
+            found_main_tags.add("H2.1")
+        elif t.startswith("H2.2") or "H2.2" in t:
+            found_main_tags.add("H2.2")
+        elif t.startswith("H0.1") or "H0.1" in t:
+            found_main_tags.add("H0.1")
+        elif t.startswith("H0.2") or "H0.2" in t:
+            found_main_tags.add("H0.2")
+        elif re.search(r'\bH1\b', t) or t.startswith("H1 -") or t.startswith("H1-") or t == "H1":
+            if not t.startswith("H1.1") and not t.startswith("H1."):
+                found_main_tags.add("H1")
+
+    # 3. Phân loại theo thứ tự ưu tiên:
+    # Các tag trạng thái đặc thù (H0.1, H0.2, H2.1, H2.2) được ưu tiên hơn H1
+    for specific_code in ["H2.1", "H2.2", "H0.1", "H0.2"]:
+        if specific_code in found_main_tags:
+            return specific_code
+
+    if "H1" in found_main_tags:
+        return "H1"
+
+    # Nếu có mã khác có gạch ngang
+    for t in filtered_parts:
+        if "-" in t:
+            code = t.split("-")[0].strip()
+            if code in ["H1", "H2.1", "H2.2", "H0.1", "H0.2"]:
+                return code
+
+    return "Chưa gán Tag"
 
 @st.cache_data(ttl=120)
 def load_data_from_google_sheet(sheet_id=MASTER_DATA_SHEET_ID, sheet_name=TARGET_SHEET_NAME):
@@ -860,7 +920,7 @@ with tab0:
     # =========================================================================
     # PHẦN 1: BỘ 4 CHỈ SỐ CỐT LÕI (ACTIVITY, TIẾN ĐỘ, HÀI LÒNG & XỬ LÝ TICKET)
     # =========================================================================
-    st.markdown("### 🏆 1. Tương Tác, Tiến Độ Học Thuật, Tỷ Lệ Hài Lòng & Vận Hành Ticket")
+    st.markdown("### 🏆 1. Tương Tác, Tiến Độ Học Thuật, Sự Hài Lòng & Vận Hành Ticket")
     st.caption("Bộ 4 chỉ số then chốt đo lường toàn diện: **Tương tác học viên**, **Tiến độ học thuật**, **Mức độ hài lòng (CSAT)** và **Năng lực giải quyết sự cố (Ticket ISO)**.")
 
     k1, k2, k3, k4 = st.columns(4)
