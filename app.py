@@ -1669,7 +1669,7 @@ with tab2:
 
         push_columns = [
             "WEEK", "MSSV", "FULL_NAME", "HANNAH", "CHƯƠNG_TRÌNH", "MÔN_ĐANG_HỌC",
-            "SỐ_MÔN_CÒN_LẠI", "THÁNG_CÒN_LẠI", "TOTAL_ACTIVITY",
+            "SỐ_MÔN_CÒN_LẠI", "THÁNG_CÒN_LẠI", "CẢNH_BÁO_HẠN", "HẠN_CC_CUỐI", "TOTAL_ACTIVITY",
             "KHẢ_NĂNG_HOÀN_THÀNH", "TIẾN_ĐỘ_HỌC_THUẬT", "SẢN_PHẨM_TUẦN_NÀY", "ACTION_TUẦN_TRƯỚC",
             "BÀI_TẬP_CÒN_THIẾU", "ACTION_SUGGESTION",
             "Trạng thái xử lý tuần này", "Ghi chú Action tuần này"
@@ -1691,6 +1691,8 @@ with tab2:
                 "MÔN_ĐANG_HỌC": st.column_config.TextColumn("Môn Đang Học", disabled=True, width="small"),
                 "SỐ_MÔN_CÒN_LẠI": st.column_config.NumberColumn("Môn Còn Lại", disabled=True, width="small"),
                 "THÁNG_CÒN_LẠI": st.column_config.TextColumn("Tháng Còn Lại", disabled=True, width="small"),
+                "CẢNH_BÁO_HẠN": st.column_config.TextColumn("Cảnh Báo Hạn", disabled=True, width="medium"),
+                "HẠN_CC_CUỐI": st.column_config.TextColumn("Hạn CC Cuối", disabled=True, width="small"),
                 "TOTAL_ACTIVITY": st.column_config.NumberColumn("Activity Tuần", disabled=True, width="small"),
                 "KHẢ_NĂNG_HOÀN_THÀNH": st.column_config.TextColumn("Đánh Giá Hoàn Thành", disabled=True, width="medium"),
                 "TIẾN_ĐỘ_HỌC_THUẬT": st.column_config.ProgressColumn("Tiến Độ Môn", min_value=0, max_value=100, format="%.1f%%"),
