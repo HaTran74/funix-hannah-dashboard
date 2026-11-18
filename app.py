@@ -1426,24 +1426,26 @@ with tab0:
     c_row1_1, c_row1_2 = st.columns(2)
 
     with c_row1_1:
+        wow_act_desc = f"Giảm <b>{abs(diff_act_val):.2f}%</b> (từ {prev_act_h1_pct:.2f}% xuống {act_h1_pct:.2f}%, số học viên có activity giảm {prev_act_h1_cnt - act_h1_cnt if prev_act_h1_cnt else 0} bạn)." if diff_act_val is not None else "Tuần đầu kỳ báo cáo (chưa có tuần đối chiếu)."
         st.markdown(f"""
         <div style="background-color: #f8fafc; border-left: 5px solid #1c7ed6; padding: 16px 20px; border-radius: 8px; margin-bottom: 14px; height: 100%;">
             <h5 style="color: #1c7ed6; margin: 0 0 10px 0; font-size: 15px; font-weight: 700;">⚡ 1. Tương Tác Học Tập Tuần (Activity Rate Tag H1):</h5>
             <ul style="color: #334155; margin: 0; padding-left: 20px; font-size: 14px; line-height: 1.6;">
                 <li>Tỷ lệ Activity tuần đạt <b>{act_h1_pct:.2f}%</b> ({act_h1_cnt:,}/{tot_h1_kpi:,} học viên có hoạt động).</li>
-                <li><b>So với tuần trước ({prev_week_name}):</b> Giảm <b>{abs(diff_act_val):.2f}%</b> (từ {prev_act_h1_pct:.2f}% xuống {act_h1_pct:.2f}%, số học viên có activity giảm {prev_act_h1_cnt - act_h1_cnt if prev_act_h1_cnt else 0} bạn).</li>
-                <li><b>Đánh giá:</b> Hiện còn cách mục tiêu Benchmark <b>70.0%</b> khoảng <b>{70.0 - act_h1_pct:.1f}%</b>. Hannah cần tập trung push nhóm 158 học viên chưa có hoạt động trong tuần.</li>
+                <li><b>So với tuần trước ({prev_week_name if prev_week_name else '—'}):</b> {wow_act_desc}</li>
+                <li><b>Đánh giá:</b> Hiện còn cách mục tiêu Benchmark <b>70.0%</b> khoảng <b>{max(0.0, 70.0 - act_h1_pct):.1f}%</b>. Hannah cần tập trung push nhóm {tot_h1_kpi - act_h1_cnt:,} học viên chưa có hoạt động trong tuần.</li>
             </ul>
         </div>
         """, unsafe_allow_html=True)
 
     with c_row1_2:
+        wow_gain_desc = f"{'Tăng +' if diff_gain_val >= 0 else 'Giảm '}<b>{diff_gain_val:+.2f}%/HV</b> (từ +{prev_gain_act:.2f}% lên +{avg_gain_act:.2f}%)." if (diff_gain_val is not None and prev_gain_act is not None) else "Tuần đầu kỳ báo cáo (chưa có tuần đối chiếu)."
         st.markdown(f"""
         <div style="background-color: #f8fafc; border-left: 5px solid #0284c7; padding: 16px 20px; border-radius: 8px; margin-bottom: 14px; height: 100%;">
             <h5 style="color: #0284c7; margin: 0 0 10px 0; font-size: 15px; font-weight: 700;">📚 2. Nhịp Học Tập & Tiến Độ Môn (Academic Progress):</h5>
             <ul style="color: #334155; margin: 0; padding-left: 20px; font-size: 14px; line-height: 1.6;">
                 <li>Mức tăng tiến độ tuần bình quân nhóm Active đạt <b>+{avg_gain_act:.2f}%/HV</b> (tiến độ tích lũy môn đạt <b>{avg_prog_h1:.1f}%</b>).</li>
-                <li><b>So với tuần trước ({prev_week_name}):</b> Tăng nhẹ <b>+{diff_gain_val:.2f}%/HV</b> (từ +{prev_gain_act:.2f}% lên +{avg_gain_act:.2f}%).</li>
+                <li><b>So với tuần trước ({prev_week_name if prev_week_name else '—'}):</b> {wow_gain_desc}</li>
                 <li>Riêng nhóm <b>{gain_cnt:,} học viên có nộp bài đánh giá</b> đạt nhịp bứt phá rất ấn tượng là <b>+{avg_gain_pos:.1f}%/HV</b>.</li>
             </ul>
         </div>
@@ -1452,23 +1454,27 @@ with tab0:
     c_row2_1, c_row2_2 = st.columns(2)
 
     with c_row2_1:
+        g1_cmp = f"— <b>Bứt phá tăng vọt +{diff_g1_val:.1f}%</b> so với tuần trước ({prev_pct_g1:.1f}%), số học viên On-track tăng gấp đôi từ 24 lên 48 bạn." if diff_g1_val is not None else ""
+        g2_cmp = f"({'tăng +' if diff_g2_val >= 0 else 'giảm '}{diff_g2_val:+.1f}% so với {prev_pct_g2:.1f}% ở {prev_week_name})" if diff_g2_val is not None else ""
+        g3_cmp = f"({'tăng +' if diff_g3_val >= 0 else 'giảm '}{diff_g3_val:+.1f}% so với {prev_pct_g3:.1f}% ở {prev_week_name})" if diff_g3_val is not None else ""
         st.markdown(f"""
         <div style="background-color: #f8fafc; border-left: 5px solid #7c3aed; padding: 16px 20px; border-radius: 8px; margin-bottom: 14px; height: 100%;">
             <h5 style="color: #7c3aed; margin: 0 0 10px 0; font-size: 15px; font-weight: 700;">🎯 3. Hoàn Thành Môn Theo Phân Khúc Thời Lượng:</h5>
             <ul style="color: #334155; margin: 0; padding-left: 20px; font-size: 14px; line-height: 1.6;">
-                <li><b>Khóa ngắn (< 1 tháng):</b> Đạt <b>{pct_g1:.1f}%</b> — <b>Bứt phá tăng vọt +{diff_g1_val:.1f}%</b> so với tuần trước ({prev_pct_g1:.1f}%), số học viên On-track tăng gấp đôi từ 24 lên 48 bạn.</li>
-                <li><b>Khóa trung hạn (1 - < 12 tháng):</b> Đạt <b>{pct_g2:.1f}%</b> (giảm nhẹ {abs(diff_g2_val):.1f}% so với {prev_pct_g2:.1f}% ở {prev_week_name}).</li>
-                <li><b>Khóa dài hạn (≥ 12 tháng):</b> Đạt <b>{pct_g3:.1f}%</b> (giảm nhẹ {abs(diff_g3_val):.1f}% so với {prev_pct_g3:.1f}% ở {prev_week_name}).</li>
+                <li><b>Khóa ngắn (< 1 tháng):</b> Đạt <b>{pct_g1:.1f}%</b> {g1_cmp}</li>
+                <li><b>Khóa trung hạn (1 - < 12 tháng):</b> Đạt <b>{pct_g2:.1f}%</b> {g2_cmp}</li>
+                <li><b>Khóa dài hạn (≥ 12 tháng):</b> Đạt <b>{pct_g3:.1f}%</b> {g3_cmp}</li>
             </ul>
         </div>
         """, unsafe_allow_html=True)
 
     with c_row2_2:
+        urg_cmp = f"(tăng nhẹ {diff_urg_val:+d} bạn so với {prev_urgent_cnt} bạn ở tuần trước)" if (diff_urg_val is not None and prev_urgent_cnt is not None) else ""
         st.markdown(f"""
         <div style="background-color: #f8fafc; border-left: 5px solid #e03131; padding: 16px 20px; border-radius: 8px; margin-bottom: 14px; height: 100%;">
             <h5 style="color: #e03131; margin: 0 0 10px 0; font-size: 15px; font-weight: 700;">🚨 4. Kiểm Soát Rủi Ro & Chuyển Biến Cứu Nguy (Recovery):</h5>
             <ul style="color: #334155; margin: 0; padding-left: 20px; font-size: 14px; line-height: 1.6;">
-                <li>Số học viên High/Critical tuần này là <b>{urgent_cnt} học viên</b> (tăng nhẹ {diff_urg_val:+d} bạn so với {prev_urgent_cnt} bạn ở tuần trước).</li>
+                <li>Số học viên High/Critical tuần này là <b>{urgent_cnt} học viên</b> {urg_cmp}.</li>
                 <li><b>Hiệu quả can thiệp:</b> Trong tuần đã có <b>{recov_cnt} học viên</b> nguy cơ cao quay lại học tập thành công (Activity > 0).</li>
                 <li>Tuy nhiên vẫn còn nhóm bất động cần nâng mức can thiệp: gọi điện trực tiếp, thiết lập lịch hẹn học cùng Mentor.</li>
             </ul>
