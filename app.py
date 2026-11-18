@@ -178,7 +178,23 @@ def normalize_dataset(df):
     else:
         df["THÁNG_CÒN_LẠI_NUM"] = 0.0
 
-    if "THÁNG_ĐÃ_HỌC / TỔNG" in df.columns:
+    def map_course_duration_category(val):
+        if pd.isna(val) or str(val).strip() in ["", "-", "nan", "None"]:
+            return "2. Khóa trung hạn (1 - < 12 tháng)"
+        s = str(val).strip()
+        s_lower = s.lower()
+        if any(k in s_lower for k in ["< 1", "<1", "ngắn", "ngan"]):
+            return "1. Khóa ngắn (< 1 tháng)"
+        elif any(k in s_lower for k in [">= 12", ">=12", "≥ 12", "≥12", "> 12", "dài", "dai"]):
+            return "3. Khóa dài hạn (≥ 12 tháng)"
+        elif any(k in s_lower for k in ["trung", "1 - < 12", "1 -", "1-", "tháng"]):
+            return "2. Khóa trung hạn (1 - < 12 tháng)"
+        else:
+            return s
+
+    if "PHÂN_LOẠI_THỜI_GIAN" in df.columns:
+        df["NHÓM_THỜI_LƯỢNG"] = df["PHÂN_LOẠI_THỜI_GIAN"].apply(map_course_duration_category)
+    elif "THÁNG_ĐÃ_HỌC / TỔNG" in df.columns:
         def get_tot_months(val):
             if pd.isna(val): return 0.0
             parts = str(val).split("/")
@@ -187,18 +203,18 @@ def normalize_dataset(df):
                 except: return 0.0
             return 0.0
         df["TỔNG_THÁNG_KHÓA_HỌC"] = df["THÁNG_ĐÃ_HỌC / TỔNG"].apply(get_tot_months)
+
+        def categorize_course_group(m):
+            if m < 1.0:
+                return "1. Khóa ngắn (< 1 tháng)"
+            elif m < 12.0:
+                return "2. Khóa trung hạn (1 - < 12 tháng)"
+            else:
+                return "3. Khóa dài hạn (≥ 12 tháng)"
+
+        df["NHÓM_THỜI_LƯỢNG"] = df["TỔNG_THÁNG_KHÓA_HỌC"].apply(categorize_course_group)
     else:
-        df["TỔNG_THÁNG_KHÓA_HỌC"] = 0.0
-
-    def categorize_course_group(m):
-        if m < 1.0:
-            return "1. Khóa ngắn (< 1 tháng)"
-        elif m < 12.0:
-            return "2. Khóa trung hạn (1 - < 12 tháng)"
-        else:
-            return "3. Khóa dài hạn (≥ 12 tháng)"
-
-    df["NHÓM_THỜI_LƯỢNG"] = df["TỔNG_THÁNG_KHÓA_HỌC"].apply(categorize_course_group)
+        df["NHÓM_THỜI_LƯỢNG"] = "2. Khóa trung hạn (1 - < 12 tháng)"
 
     if "MÔN_HOÀN_THÀNH / TỔNG" in df.columns:
         parsed_c = df["MÔN_HOÀN_THÀNH / TỔNG"].apply(parse_fraction)
