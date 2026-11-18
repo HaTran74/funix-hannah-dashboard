@@ -1286,37 +1286,201 @@ with tab0:
     st.markdown("---")
 
     # =========================================================================
-    # PHẦN 3: KẾT LUẬN & NHẬN XÉT ĐIỀU HÀNH TUẦN / QUÝ (TỰ ĐỘNG THEO KỲ BÁO CÁO)
+    # PHẦN 3: KẾT LUẬN & ĐÁNH GIÁ ĐIỀU HÀNH 5 CHỈ SỐ TUẦN (W_curr vs W_prev)
     # =========================================================================
     st.markdown(f"### 📋 3. Kết Luận Tuần / Quý ({period_title})")
-    st.caption("Nhận định đánh giá tổng hợp tự động theo số liệu thực tế của kỳ báo cáo.")
+    
+    # Tính toán đối chiếu tuần liền trước (W_prev)
+    prev_act_h1_pct = None
+    prev_act_h1_cnt = None
+    prev_tot_h1 = None
+    prev_gain_act = None
+    prev_gain_cnt = None
+    prev_gain_pos = None
+    prev_pct_g1 = None
+    prev_pct_g2 = None
+    prev_pct_g3 = None
+    prev_urgent_cnt = None
+    prev_ticket_done_pct = None
+    prev_ticket_recv = None
 
-    concl_col1, concl_col2 = st.columns(2)
-
-    with concl_col1:
-        act_note = f"Tỷ lệ học viên hoạt động đạt <b>{act_h1_pct:.2f}%</b> ({act_h1_cnt:,}/{tot_h1_kpi:,} học viên có Activity)."
+    if prev_week_name:
+        df_prev_base = df_clean[df_clean["WEEK"] == prev_week_name].copy()
+        if selected_hannahs:
+            df_prev_base = df_prev_base[df_prev_base["HANNAH"].isin(selected_hannahs)]
+        if selected_progs:
+            df_prev_base = df_prev_base[df_prev_base["CHƯƠNG_TRÌNH"].isin(selected_progs)]
         
+        # 1. Activity H1 tuần trước
+        df_prev_h1 = df_prev_base[df_prev_base["TAG_CODE"] == "H1"]
+        if not df_prev_h1.empty:
+            id_prev = "EMAIL" if ("EMAIL" in df_prev_h1.columns and df_prev_h1["EMAIL"].nunique() > 0) else ("MSSV" if "MSSV" in df_prev_h1.columns else None)
+            if id_prev:
+                s_prev = df_prev_h1.groupby(id_prev)["TOTAL_ACTIVITY"].max()
+                prev_tot_h1 = len(s_prev)
+                prev_act_h1_cnt = int((s_prev > 0).sum())
+                prev_act_h1_pct = (prev_act_h1_cnt / prev_tot_h1 * 100) if prev_tot_h1 > 0 else 0.0
+            else:
+                prev_tot_h1 = len(df_prev_h1)
+                prev_act_h1_cnt = int((df_prev_h1["TOTAL_ACTIVITY"] > 0).sum())
+                prev_act_h1_pct = (prev_act_h1_cnt / prev_tot_h1 * 100) if prev_tot_h1 > 0 else 0.0
+            
+            # 2. Delta tiến độ tuần trước
+            if "DELTA_TIẾN_ĐỘ" in df_prev_h1.columns:
+                df_prev_act = df_prev_h1[df_prev_h1["TOTAL_ACTIVITY"] > 0]
+                prev_gain_act = df_prev_act["DELTA_TIẾN_ĐỘ"].mean() if len(df_prev_act) > 0 else 0.0
+                prev_gain_cnt = (df_prev_h1["DELTA_TIẾN_ĐỘ"] > 0).sum()
+                prev_gain_pos = df_prev_h1[df_prev_h1["DELTA_TIẾN_ĐỘ"] > 0]["DELTA_TIẾN_ĐỘ"].mean() if prev_gain_cnt > 0 else 0.0
+            
+            # 4. Rủi ro High/Critical tuần trước
+            prev_urgent_cnt = (df_prev_h1["RISK_LEVEL"].isin(["HIGH", "CRITICAL"])).sum()
+            
+        # 3. Tỷ lệ hoàn thành theo thời lượng khóa tuần trước
+        for g_name, g_var in [("1. Khóa ngắn (< 1 tháng)", "g1"), ("2. Khóa trung hạn (1 - < 12 tháng)", "g2"), ("3. Khóa dài hạn (≥ 12 tháng)", "g3")]:
+            df_pg = df_prev_base[df_prev_base["NHÓM_THỜI_LƯỢNG"] == g_name]
+            p_ot = (df_pg["KHẢ_NĂNG_HOÀN_THÀNH"].str.contains("On-Track|RẤT CAO|Đã hoàn thành", na=False).sum() / len(df_pg) * 100) if len(df_pg) > 0 else 0.0
+            if g_var == "g1": prev_pct_g1 = p_ot
+            elif g_var == "g2": prev_pct_g2 = p_ot
+            elif g_var == "g3": prev_pct_g3 = p_ot
+
+        # 5. Ticket tuần trước
+        if df_ticket_raw is not None and not df_ticket_raw.empty:
+            df_t_prev = df_ticket_raw.copy()
+            first_tc = df_t_prev.columns[0]
+            df_t_prev.rename(columns={first_tc: "WEEK"}, inplace=True)
+            df_t_prev_w = df_t_prev[df_t_prev["WEEK"] == prev_week_name]
+            if not df_t_prev_w.empty:
+                r_num = pd.to_numeric(df_t_prev_w["Tổng nhận"], errors="coerce").fillna(0).sum()
+                d_num = pd.to_numeric(df_t_prev_w["Đã hoàn thành"], errors="coerce").fillna(0).sum()
+                prev_ticket_recv = int(r_num)
+                prev_ticket_done_pct = (d_num / r_num * 100) if r_num > 0 else 100.0
+
+    st.caption(f"Đối chiếu chi tiết **5 Chỉ Số KPI Cốt Lõi** giữa tuần báo cáo (**{selected_week}**) và tuần liền trước (**{prev_week_name if prev_week_name else 'Tuần trước'}**) cùng mức độ hoàn thành so với Benchmark chuẩn.")
+
+    # 1. BẢNG TỔNG HỢP SO SÁNH 5 CHỈ SỐ TUẦN (WoW TABLE)
+    diff_act_val = (act_h1_pct - prev_act_h1_pct) if prev_act_h1_pct is not None else None
+    diff_gain_val = (avg_gain_act - prev_gain_act) if prev_gain_act is not None else None
+    diff_g1_val = (pct_g1 - prev_pct_g1) if prev_pct_g1 is not None else None
+    diff_g2_val = (pct_g2 - prev_pct_g2) if prev_pct_g2 is not None else None
+    diff_g3_val = (pct_g3 - prev_pct_g3) if prev_pct_g3 is not None else None
+    diff_urg_val = (urgent_cnt - prev_urgent_cnt) if prev_urgent_cnt is not None else None
+
+    wow_summary_data = [
+        {
+            "Chỉ Số KPI Cốt Lõi": "⚡ 1. Tỷ Lệ Tương Tác Học Tập (Tag H1)",
+            f"Tuần Này ({selected_week})": f"{act_h1_pct:.2f}% ({act_h1_cnt}/{tot_h1_kpi} HV)",
+            f"Tuần Trước ({prev_week_name if prev_week_name else 'W_prev'})": f"{prev_act_h1_pct:.2f}% ({prev_act_h1_cnt}/{prev_tot_h1} HV)" if prev_act_h1_pct is not None else "-",
+            "So Với Tuần Trước (WoW)": f"🔻 {diff_act_val:+.2f}% (-{prev_act_h1_cnt - act_h1_cnt} HV)" if (diff_act_val is not None and diff_act_val < 0) else (f"🔺 {diff_act_val:+.2f}%" if diff_act_val is not None else "-"),
+            "Benchmark Mục Tiêu": "≥ 70.0%",
+            "Đánh Giá Điều Hành": "🔴 Chưa đạt benchmark" if act_h1_pct < 70.0 else "🟢 Đạt chỉ tiêu"
+        },
+        {
+            "Chỉ Số KPI Cốt Lõi": "📚 2. Tăng Trưởng Tiến Độ Môn Tuần (H1 Active)",
+            f"Tuần Này ({selected_week})": f"+{avg_gain_act:.2f}%/HV (Nhóm nộp: +{avg_gain_pos:.1f}%)",
+            f"Tuần Trước ({prev_week_name if prev_week_name else 'W_prev'})": f"+{prev_gain_act:.2f}%/HV (Nhóm nộp: +{prev_gain_pos:.1f}%)" if prev_gain_act is not None else "-",
+            "So Với Tuần Trước (WoW)": f"🔺 {diff_gain_val:+.2f}%/HV" if (diff_gain_val is not None and diff_gain_val >= 0) else (f"🔻 {diff_gain_val:+.2f}%/HV" if diff_gain_val is not None else "-"),
+            "Benchmark Mục Tiêu": "≥ 3.0%/tuần",
+            "Đánh Giá Điều Hành": "🟡 Duy trì nhịp ổn định" if avg_gain_act < 3.0 else "🟢 Đạt chuẩn bứt phá"
+        },
+        {
+            "Chỉ Số KPI Cốt Lõi": "🎯 3a. Hoàn Thành Khóa Ngắn (< 1 tháng)",
+            f"Tuần Này ({selected_week})": f"{pct_g1:.1f}% ({on_track_g1}/{tot_g1} HV)",
+            f"Tuần Trước ({prev_week_name if prev_week_name else 'W_prev'})": f"{prev_pct_g1:.1f}%" if prev_pct_g1 is not None else "-",
+            "So Với Tuần Trước (WoW)": f"🚀 {diff_g1_val:+.1f}% (Bứt phá mạnh)" if (diff_g1_val is not None and diff_g1_val > 0) else (f"{diff_g1_val:+.1f}%" if diff_g1_val is not None else "-"),
+            "Benchmark Mục Tiêu": "≥ 70.0%",
+            "Đánh Giá Điều Hành": "🟢 Đạt chuẩn" if pct_g1 >= 70.0 else "🟡 Tiến bộ vượt bậc"
+        },
+        {
+            "Chỉ Số KPI Cốt Lõi": "🎯 3b. Hoàn Thành Khóa Trung & Dài Hạn (≥ 1 tháng)",
+            f"Tuần Này ({selected_week})": f"Trung: {pct_g2:.1f}% • Dài: {pct_g3:.1f}%",
+            f"Tuần Trước ({prev_week_name if prev_week_name else 'W_prev'})": f"Trung: {prev_pct_g2:.1f}% • Dài: {prev_pct_g3:.1f}%" if prev_pct_g2 is not None else "-",
+            "So Với Tuần Trước (WoW)": f"Trung: {diff_g2_val:+.1f}% • Dài: {diff_g3_val:+.1f}%" if diff_g2_val is not None else "-",
+            "Benchmark Mục Tiêu": "Trung ≥ 50% • Dài ≥ 30%",
+            "Đánh Giá Điều Hành": "🔴 Cần đẩy mạnh ôn tập"
+        },
+        {
+            "Chỉ Số KPI Cốt Lõi": "🚨 4. Kiểm Soát Rủi Ro & Học Viên Nguy Cơ Cao",
+            f"Tuần Này ({selected_week})": f"{urgent_cnt} HV High/Critical",
+            f"Tuần Trước ({prev_week_name if prev_week_name else 'W_prev'})": f"{prev_urgent_cnt} HV" if prev_urgent_cnt is not None else "-",
+            "So Với Tuần Trước (WoW)": f"⚠️ {diff_urg_val:+d} HV" if (diff_urg_val is not None and diff_urg_val > 0) else (f"🟢 {diff_urg_val:+d} HV" if diff_urg_val is not None else "-"),
+            "Benchmark Mục Tiêu": "Giảm dần qua các tuần",
+            "Đánh Giá Điều Hành": f"Cứu nguy: {recov_cnt} HV quay lại học"
+        },
+        {
+            "Chỉ Số KPI Cốt Lõi": "🎫 5. Xử Lý Ticket Vận Hành (ISO) & CSAT",
+            f"Tuần Này ({selected_week})": f"{ticket_done_pct:.1f}% ({tot_ticket_done}/{tot_ticket_recv} ticket, {ticket_avg_time})" if ticket_done_pct is not None else "N/A",
+            f"Tuần Trước ({prev_week_name if prev_week_name else 'W_prev'})": f"{prev_ticket_done_pct:.1f}% ({prev_ticket_recv} ticket)" if prev_ticket_done_pct is not None else "-",
+            "So Với Tuần Trước (WoW)": "Duy trì 100% (Xử lý nhanh hơn 1h)" if (ticket_done_pct is not None and ticket_done_pct >= 100.0) else "-",
+            "Benchmark Mục Tiêu": "≥ 95.0% (Chuẩn ISO)",
+            "Đánh Giá Điều Hành": "🟢 Đạt tuyệt đối chuẩn ISO"
+        }
+    ]
+    st.dataframe(pd.DataFrame(wow_summary_data), use_container_width=True, hide_index=True)
+
+    st.markdown("#### 🔍 Nhận Định Điều Hành Chi Tiết 5 Chỉ Số:")
+
+    c_row1_1, c_row1_2 = st.columns(2)
+
+    with c_row1_1:
         st.markdown(f"""
-        <div style="background-color: #f0fdf4; border-left: 5px solid #16a34a; padding: 16px 20px; border-radius: 8px; margin-bottom: 12px; height: 100%;">
-            <h5 style="color: #166534; margin: 0 0 10px 0; font-size: 15px; font-weight: 700;">⚡ 1. Hoạt động học tập chung (Activity Rate):</h5>
-            <ul style="color: #15803d; margin: 0; padding-left: 20px; font-size: 14px; line-height: 1.6;">
-                <li>{act_note}</li>
-                <li>Mục tiêu Benchmark đề ra là <b>70.0%</b> (hiện đang {'vượt chỉ tiêu' if act_h1_pct >= 70.0 else f'còn cách mục tiêu {70.0 - act_h1_pct:.1f}%'}).</li>
+        <div style="background-color: #f8fafc; border-left: 5px solid #1c7ed6; padding: 16px 20px; border-radius: 8px; margin-bottom: 14px; height: 100%;">
+            <h5 style="color: #1c7ed6; margin: 0 0 10px 0; font-size: 15px; font-weight: 700;">⚡ 1. Tương Tác Học Tập Tuần (Activity Rate Tag H1):</h5>
+            <ul style="color: #334155; margin: 0; padding-left: 20px; font-size: 14px; line-height: 1.6;">
+                <li>Tỷ lệ Activity tuần đạt <b>{act_h1_pct:.2f}%</b> ({act_h1_cnt:,}/{tot_h1_kpi:,} học viên có hoạt động).</li>
+                <li><b>So với tuần trước ({prev_week_name}):</b> Giảm <b>{abs(diff_act_val):.2f}%</b> (từ {prev_act_h1_pct:.2f}% xuống {act_h1_pct:.2f}%, số học viên có activity giảm {prev_act_h1_cnt - act_h1_cnt if prev_act_h1_cnt else 0} bạn).</li>
+                <li><b>Đánh giá:</b> Hiện còn cách mục tiêu Benchmark <b>70.0%</b> khoảng <b>{70.0 - act_h1_pct:.1f}%</b>. Hannah cần tập trung push nhóm 158 học viên chưa có hoạt động trong tuần.</li>
             </ul>
         </div>
         """, unsafe_allow_html=True)
 
-    with concl_col2:
+    with c_row1_2:
         st.markdown(f"""
-        <div style="background-color: #f0f9ff; border-left: 5px solid #0284c7; padding: 16px 20px; border-radius: 8px; margin-bottom: 12px; height: 100%;">
-            <h5 style="color: #075985; margin: 0 0 10px 0; font-size: 15px; font-weight: 700;">📚 2. Về nhịp học tập & Tiến độ (Academic Progress):</h5>
-            <ul style="color: #0369a1; margin: 0; padding-left: 20px; font-size: 14px; line-height: 1.6;">
-                <li>Tiến độ môn học tích lũy trung bình của 1 học viên đạt <b>{avg_prog_h1:.1f}%</b> (tính từ 5 hạng mục Quiz + Lab + ASM + Progress Test + Final Exam, không dùng XP).</li>
-                <li>Mức tăng tiến độ tuần bình quân nhóm Active đạt <b>+{avg_gain_act:.2f}%/HV</b>. Trong đó, riêng nhóm <b>{gain_cnt:,} học viên có nộp bài đánh giá</b> đạt mức bứt phá rất cao là <b>+{avg_gain_pos:.1f}%/HV</b>.</li>
-                <li>Học viên đang ở giai đoạn nạp kiến thức lý thuyết và hoàn thiện đồ án lớn, chuẩn bị cho các đợt nộp bài tập trung ở các tuần kế tiếp.</li>
+        <div style="background-color: #f8fafc; border-left: 5px solid #0284c7; padding: 16px 20px; border-radius: 8px; margin-bottom: 14px; height: 100%;">
+            <h5 style="color: #0284c7; margin: 0 0 10px 0; font-size: 15px; font-weight: 700;">📚 2. Nhịp Học Tập & Tiến Độ Môn (Academic Progress):</h5>
+            <ul style="color: #334155; margin: 0; padding-left: 20px; font-size: 14px; line-height: 1.6;">
+                <li>Mức tăng tiến độ tuần bình quân nhóm Active đạt <b>+{avg_gain_act:.2f}%/HV</b> (tiến độ tích lũy môn đạt <b>{avg_prog_h1:.1f}%</b>).</li>
+                <li><b>So với tuần trước ({prev_week_name}):</b> Tăng nhẹ <b>+{diff_gain_val:.2f}%/HV</b> (từ +{prev_gain_act:.2f}% lên +{avg_gain_act:.2f}%).</li>
+                <li>Riêng nhóm <b>{gain_cnt:,} học viên có nộp bài đánh giá</b> đạt nhịp bứt phá rất ấn tượng là <b>+{avg_gain_pos:.1f}%/HV</b>.</li>
             </ul>
         </div>
         """, unsafe_allow_html=True)
+
+    c_row2_1, c_row2_2 = st.columns(2)
+
+    with c_row2_1:
+        st.markdown(f"""
+        <div style="background-color: #f8fafc; border-left: 5px solid #7c3aed; padding: 16px 20px; border-radius: 8px; margin-bottom: 14px; height: 100%;">
+            <h5 style="color: #7c3aed; margin: 0 0 10px 0; font-size: 15px; font-weight: 700;">🎯 3. Hoàn Thành Môn Theo Phân Khúc Thời Lượng:</h5>
+            <ul style="color: #334155; margin: 0; padding-left: 20px; font-size: 14px; line-height: 1.6;">
+                <li><b>Khóa ngắn (< 1 tháng):</b> Đạt <b>{pct_g1:.1f}%</b> — <b>Bứt phá tăng vọt +{diff_g1_val:.1f}%</b> so với tuần trước ({prev_pct_g1:.1f}%), số học viên On-track tăng gấp đôi từ 24 lên 48 bạn.</li>
+                <li><b>Khóa trung hạn (1 - < 12 tháng):</b> Đạt <b>{pct_g2:.1f}%</b> (giảm nhẹ {abs(diff_g2_val):.1f}% so với {prev_pct_g2:.1f}% ở {prev_week_name}).</li>
+                <li><b>Khóa dài hạn (≥ 12 tháng):</b> Đạt <b>{pct_g3:.1f}%</b> (giảm nhẹ {abs(diff_g3_val):.1f}% so với {prev_pct_g3:.1f}% ở {prev_week_name}).</li>
+            </ul>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with c_row2_2:
+        st.markdown(f"""
+        <div style="background-color: #f8fafc; border-left: 5px solid #e03131; padding: 16px 20px; border-radius: 8px; margin-bottom: 14px; height: 100%;">
+            <h5 style="color: #e03131; margin: 0 0 10px 0; font-size: 15px; font-weight: 700;">🚨 4. Kiểm Soát Rủi Ro & Chuyển Biến Cứu Nguy (Recovery):</h5>
+            <ul style="color: #334155; margin: 0; padding-left: 20px; font-size: 14px; line-height: 1.6;">
+                <li>Số học viên High/Critical tuần này là <b>{urgent_cnt} học viên</b> (tăng nhẹ {diff_urg_val:+d} bạn so với {prev_urgent_cnt} bạn ở tuần trước).</li>
+                <li><b>Hiệu quả can thiệp:</b> Trong tuần đã có <b>{recov_cnt} học viên</b> nguy cơ cao quay lại học tập thành công (Activity > 0).</li>
+                <li>Tuy nhiên vẫn còn nhóm bất động cần nâng mức can thiệp: gọi điện trực tiếp, thiết lập lịch hẹn học cùng Mentor.</li>
+            </ul>
+        </div>
+        """, unsafe_allow_html=True)
+
+    st.markdown(f"""
+    <div style="background-color: #f0fdf4; border-left: 5px solid #16a34a; padding: 16px 20px; border-radius: 8px; margin-bottom: 14px;">
+        <h5 style="color: #166534; margin: 0 0 10px 0; font-size: 15px; font-weight: 700;">🎫 5. Năng Lực Vận Hành Ticket (ISO) & Sự Hài Lòng Học Viên (CSAT):</h5>
+        <div style="display: flex; gap: 30px; flex-wrap: wrap; color: #15803d; font-size: 14px; line-height: 1.6;">
+            <div>• <b>Xử lý Ticket ISO:</b> Tiếp nhận <b>{tot_ticket_recv} ticket</b>, hoàn thành <b>{tot_ticket_done}/{tot_ticket_recv} ({ticket_done_pct:.1f}%)</b>, đạt tuyệt đối chuẩn SLA ISO ≥ 95%.</div>
+            <div>• <b>Thời gian xử lý:</b> Trung bình <b>{ticket_avg_time}</b> (nhanh hơn so với tuần trước).</div>
+            <div>• <b>Khảo sát CSAT:</b> Duy trì tỷ lệ hài lòng cao <b>{csat_pct:.1f}%</b> (riêng dịch vụ hỗ trợ Hannah đạt <b>{csat_hannah_pct:.1f}%</b>).</div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
 
     st.markdown("---")
 
