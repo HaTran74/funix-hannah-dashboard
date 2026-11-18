@@ -2434,8 +2434,9 @@ with tab5:
 
     st.markdown(f"Hiển thị **{len(df_all_h1_view):,}** học viên H1:")
     h1_view_cols = [
-        "WEEK", "MSSV", "FULL_NAME", "EMAIL", "HANNAH", "CHƯƠNG_TRÌNH", "MÔN_ĐANG_HỌC",
-        "TIẾN_ĐỘ_HỌC_THUẬT", "CHUYỂN_BIẾN_TUẦN_NÀY", "MÔN_HOÀN_THÀNH / TỔNG", "THÁNG_CÒN_LẠI",
+        "WEEK", "MSSV", "FULL_NAME", "EMAIL", "HANNAH", "CHƯƠNG_TRÌNH", "NHÓM_SẢN_PHẨM", "MÔN_ĐANG_HỌC", "MÃ_INSTANCE_ĐANG_HỌC",
+        "TIẾN_ĐỘ_HỌC_THUẬT", "CHUYỂN_BIẾN_TUẦN_NÀY", "MÔN_HOÀN_THÀNH / TỔNG", "THÁNG_CÒN_LẠI", "CẢNH_BÁO_HẠN", "HẠN_CC_CUỐI",
+        "ĐIỂM_TỔNG_HỢP", "GHI_CHÚ_TIẾN_ĐỘ",
         "QUIZ", "LAB", "ASSIGNMENT", "PROGRESS_TEST", "FINAL_EXAM",
         "TOTAL_ACTIVITY", "KHẢ_NĂNG_HOÀN_THÀNH", "RISK_LEVEL", "ROOT_CAUSE", "ACTION_SUGGESTION"
     ]
