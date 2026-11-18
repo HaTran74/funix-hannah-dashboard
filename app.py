@@ -860,7 +860,7 @@ with tab0:
     # =========================================================================
     # PHẦN 1: BỘ 4 CHỈ SỐ CỐT LÕI (ACTIVITY, TIẾN ĐỘ, HÀI LÒNG & XỬ LÝ TICKET)
     # =========================================================================
-    st.markdown("### 🏆 1. Tương Tác, Tiến Độ Học Thuật, Sự Hài Lòng & Vận Hành Ticket")
+    st.markdown("### 🏆 1. Tương Tác, Tiến Độ Học Thuật, Tỷ Lệ Hài Lòng & Vận Hành Ticket")
     st.caption("Bộ 4 chỉ số then chốt đo lường toàn diện: **Tương tác học viên**, **Tiến độ học thuật**, **Mức độ hài lòng (CSAT)** và **Năng lực giải quyết sự cố (Ticket ISO)**.")
 
     k1, k2, k3, k4 = st.columns(4)
