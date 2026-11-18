@@ -468,6 +468,11 @@ def normalize_dataset(df):
     for c in clean_str_cols:
         if c in df.columns:
             df[c] = df[c].fillna("N/A").astype(str).str.strip()
+            if c == "HANNAH":
+                df[c] = df[c].replace({
+                    "N/A": "Chưa phân Hannah", "nan": "Chưa phân Hannah", 
+                    "None": "Chưa phân Hannah", "": "Chưa phân Hannah", "-": "Chưa phân Hannah"
+                })
 
     return df
 
