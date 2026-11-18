@@ -1326,11 +1326,15 @@ with tab0:
                 prev_act_h1_pct = (prev_act_h1_cnt / prev_tot_h1 * 100) if prev_tot_h1 > 0 else 0.0
             
             # 2. Delta tiến độ tuần trước
-            if "DELTA_TIẾN_ĐỘ" in df_prev_h1.columns:
-                df_prev_act = df_prev_h1[df_prev_h1["TOTAL_ACTIVITY"] > 0]
-                prev_gain_act = df_prev_act["DELTA_TIẾN_ĐỘ"].mean() if len(df_prev_act) > 0 else 0.0
-                prev_gain_cnt = (df_prev_h1["DELTA_TIẾN_ĐỘ"] > 0).sum()
-                prev_gain_pos = df_prev_h1[df_prev_h1["DELTA_TIẾN_ĐỘ"] > 0]["DELTA_TIẾN_ĐỘ"].mean() if prev_gain_cnt > 0 else 0.0
+            prev_before_w = week_to_prev_map.get(prev_week_name)
+            df_prev_h1_calc = df_prev_h1.copy()
+            df_prev_h1_calc["DELTA_TIẾN_ĐỘ"] = df_prev_h1_calc.apply(
+                lambda r: determine_academic_delta(r, prev_before_w), axis=1
+            )
+            df_prev_act = df_prev_h1_calc[df_prev_h1_calc["TOTAL_ACTIVITY"] > 0]
+            prev_gain_act = df_prev_act["DELTA_TIẾN_ĐỘ"].mean() if len(df_prev_act) > 0 else 0.0
+            prev_gain_cnt = (df_prev_h1_calc["DELTA_TIẾN_ĐỘ"] > 0).sum()
+            prev_gain_pos = df_prev_h1_calc[df_prev_h1_calc["DELTA_TIẾN_ĐỘ"] > 0]["DELTA_TIẾN_ĐỘ"].mean() if prev_gain_cnt > 0 else 0.0
             
             # 4. Rủi ro High/Critical tuần trước
             prev_urgent_cnt = (df_prev_h1["RISK_LEVEL"].isin(["HIGH", "CRITICAL"])).sum()
