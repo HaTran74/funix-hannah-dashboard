@@ -785,19 +785,21 @@ with tab0:
     # --- TÍNH TOÁN CÁC CHỈ SỐ KPI ---
     # 1. Học viên Tag H1
     df_h1_tab0 = df_deep[df_deep["TAG_CODE"] == "H1"].copy() if "TAG_CODE" in df_deep.columns else df_deep.copy()
-    tot_h1_kpi = len(df_h1_tab0)
 
-    # Hiển thị tóm tắt quy mô mẫu đang chọn để tránh hiểu lầm khi áp dụng bộ lọc
-    if tot_h1_kpi > 0:
-        act_cnt_quick = (df_h1_tab0["TOTAL_ACTIVITY"] > 0).sum()
-        filter_note = f" (Bộ lọc: {len(selected_hannahs)} Hannah, {len(selected_progs)} Chương trình)" if (len(selected_hannahs) < len(all_hannahs) or len(selected_progs) < len(all_progs)) else ""
-        st.info(f"📊 Phạm vi dữ liệu: **{period_title}**{filter_note} • Tổng số học viên Tag H1: **{tot_h1_kpi:,}** học viên • Có hoạt động tuần: **{act_cnt_quick:,}** học viên.")
+    # KPI 1: Tỷ lệ Active tuần H1 (Target >= 70%) - Đo lường theo Unique Email / MSSV học viên
+    id_col = "EMAIL" if ("EMAIL" in df_h1_tab0.columns and df_h1_tab0["EMAIL"].nunique() > 0) else ("MSSV" if "MSSV" in df_h1_tab0.columns else None)
+    if id_col:
+        student_act_series = df_h1_tab0.groupby(id_col)["TOTAL_ACTIVITY"].max()
+        tot_h1_kpi = len(student_act_series)
+        act_h1_cnt = int((student_act_series > 0).sum())
+        no_act_cnt = tot_h1_kpi - act_h1_cnt
+        act_h1_pct = (act_h1_cnt / tot_h1_kpi * 100) if tot_h1_kpi > 0 else 0.0
     else:
-        st.warning(f"⚠️ Không có học viên Tag H1 nào phù hợp với bộ lọc hiện tại của kỳ **{period_title}**. Vui lòng kiểm tra lại bộ lọc Hannah / Chương trình ở thanh bên.")
+        tot_h1_kpi = len(df_h1_tab0)
+        act_h1_cnt = int((df_h1_tab0["TOTAL_ACTIVITY"] > 0).sum()) if tot_h1_kpi > 0 else 0
+        no_act_cnt = tot_h1_kpi - act_h1_cnt
+        act_h1_pct = (act_h1_cnt / tot_h1_kpi * 100) if tot_h1_kpi > 0 else 0.0
 
-    # KPI 1: Tỷ lệ Active tuần H1 (Target >= 70%)
-    act_h1_cnt = (df_h1_tab0["TOTAL_ACTIVITY"] > 0).sum() if tot_h1_kpi > 0 else 0
-    act_h1_pct = (act_h1_cnt / tot_h1_kpi * 100) if tot_h1_kpi > 0 else 0.0
     target_act = 70.0
     diff_act = act_h1_pct - target_act
 
