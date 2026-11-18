@@ -399,7 +399,13 @@ def normalize_dataset(df):
     df["TIẾN_ĐỘ_XP"] = df.apply(format_xp_progress, axis=1)
     df["ACTION_SUGGESTION"] = df.apply(generate_smart_push_action, axis=1)
 
-    for c in ["WEEK", "MSSV", "FULL_NAME", "EMAIL", "TAG", "HANNAH", "CHƯƠNG_TRÌNH", "MÔN_ĐANG_HỌC", "STUDENT_STATUS", "RISK_LEVEL", "ROOT_CAUSE", "ACTION_SUGGESTION", "BÀI_TẬP_CÒN_THIẾU", "TIẾN_ĐỘ_XP", "NHÓM_THỜI_LƯỢNG"]:
+    clean_str_cols = [
+        "WEEK", "MSSV", "FULL_NAME", "EMAIL", "TAG", "HANNAH", "CHƯƠNG_TRÌNH", "MÔN_ĐANG_HỌC", 
+        "STUDENT_STATUS", "RISK_LEVEL", "ROOT_CAUSE", "ACTION_SUGGESTION", "BÀI_TẬP_CÒN_THIẾU", 
+        "TIẾN_ĐỘ_XP", "NHÓM_THỜI_LƯỢNG", "NHÓM_SẢN_PHẨM", "PHÂN_LOẠI_THỜI_GIAN", "HẠN_CC_CUỐI", 
+        "CẢNH_BÁO_HẠN", "MÃ_INSTANCE_ĐANG_HỌC", "ĐIỂM_TỔNG_HỢP", "GHI_CHÚ_TIẾN_ĐỘ"
+    ]
+    for c in clean_str_cols:
         if c in df.columns:
             df[c] = df[c].fillna("N/A").astype(str).str.strip()
 
