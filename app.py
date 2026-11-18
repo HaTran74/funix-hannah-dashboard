@@ -1312,39 +1312,111 @@ with tab0:
 # TAB 1: TỔNG QUAN QUY MÔ & PHÂN BỔ TAG
 # =========================================================================
 with tab1:
-    st.subheader(f"Chỉ Số Điều Hành Tổng Thể — Quy Mô Toàn Bộ Học Viên {f'({selected_week})' if selected_week != 'Tất cả tuần trong Quý' else f'({selected_quarter})'}")
+    period_title_t1 = selected_week if selected_week != "Tất cả tuần trong Quý" else selected_quarter
+    st.subheader(f"Chỉ Số Điều Hành Tổng Thể — Quy Mô Học Viên Đang Học & Phân Bổ Tag ({period_title_t1})")
 
-    total_active_all = len(df_base)
-    tag_counts = df_base["TAG_CODE"].value_counts().to_dict()
+    # Lấy toàn bộ dữ liệu học viên trong kỳ (trước khi lọc Hannah/Chương trình) để hiển thị đầy đủ 100% quy mô
+    df_t1_base = df_week_full.copy()
+
+    # Nhận diện cột định danh học viên duy nhất (Email hoặc MSSV)
+    id_col_t1 = "EMAIL" if ("EMAIL" in df_t1_base.columns and df_t1_base["EMAIL"].nunique() > 0) else ("MSSV" if "MSSV" in df_t1_base.columns else None)
+
+    # Sắp xếp ưu tiên để giữ dòng có Tag chính và có Hannah khi khử trùng nếu 1 học viên có nhiều dòng môn học
+    if id_col_t1:
+        # Gán trọng số ưu tiên: Tag đặc thù (H2.1, H2.2, H0.1, H0.2) > H1 > Chưa gán Tag
+        tag_rank = {"H2.1": 1, "H2.2": 2, "H0.1": 3, "H0.2": 4, "H1": 5, "Chưa gán Tag": 6}
+        df_t1_base["_TAG_RANK"] = df_t1_base["TAG_CODE"].map(tag_rank).fillna(99)
+        df_t1_sorted = df_t1_base.sort_values(by=["_TAG_RANK"])
+        df_t1_unique = df_t1_sorted.drop_duplicates(subset=[id_col_t1]).copy()
+    else:
+        df_t1_unique = df_t1_base.copy()
+
+    # --- KHỐI 1: TỔNG QUAN QUY MÔ ACTIVE TOÀN BỘ (GỒM CẢ CHƯA PHÂN HANNAH HOẶC CHƯA GÁN TAG) ---
+    tot_active_learning = len(df_t1_unique)
+
+    # Học viên Chưa phân Hannah vs Đã phân Hannah
+    is_no_hannah = df_t1_unique["HANNAH"].isin(["Chưa phân Hannah", "N/A", "nan", "None", "", "-"]) | df_t1_unique["HANNAH"].isna()
+    cnt_no_hannah = int(is_no_hannah.sum())
+    cnt_has_hannah = tot_active_learning - cnt_no_hannah
+    pct_has_hannah = (cnt_has_hannah / tot_active_learning * 100) if tot_active_learning > 0 else 0.0
+    pct_no_hannah = (cnt_no_hannah / tot_active_learning * 100) if tot_active_learning > 0 else 0.0
+
+    # Học viên Chưa gán Tag chính vs Đã gán Tag chính (5 tag chính: H1, H2.1, H2.2, H0.1, H0.2)
+    is_main_tag = df_t1_unique["TAG_CODE"].isin(["H1", "H2.1", "H2.2", "H0.1", "H0.2"])
+    cnt_has_tag = int(is_main_tag.sum())
+    cnt_no_tag = tot_active_learning - cnt_has_tag
+    pct_has_tag = (cnt_has_tag / tot_active_learning * 100) if tot_active_learning > 0 else 0.0
+    pct_no_tag = (cnt_no_tag / tot_active_learning * 100) if tot_active_learning > 0 else 0.0
+
+    # --- KHỐI 2: PHÂN RÃ HỌC VIÊN ĐƯỢC CHĂM SÓC THEO 5 TAG CHÍNH ---
+    tag_counts = df_t1_unique["TAG_CODE"].value_counts().to_dict()
 
     cnt_h1 = tag_counts.get("H1", 0)
     cnt_h21 = tag_counts.get("H2.1", 0)
     cnt_h22 = tag_counts.get("H2.2", 0)
     cnt_h01 = tag_counts.get("H0.1", 0)
     cnt_h02 = tag_counts.get("H0.2", 0)
+    cnt_other_tag = tag_counts.get("Chưa gán Tag", 0) + sum(v for k, v in tag_counts.items() if k not in ["H1", "H2.1", "H2.2", "H0.1", "H0.2", "Chưa gán Tag"])
 
-    pct_h1 = (cnt_h1 / total_active_all * 100) if total_active_all > 0 else 0
-    pct_h21 = (cnt_h21 / total_active_all * 100) if total_active_all > 0 else 0
-    pct_h22 = (cnt_h22 / total_active_all * 100) if total_active_all > 0 else 0
-    pct_h01 = (cnt_h01 / total_active_all * 100) if total_active_all > 0 else 0
-    pct_h02 = (cnt_h02 / total_active_all * 100) if total_active_all > 0 else 0
+    pct_h1 = (cnt_h1 / tot_active_learning * 100) if tot_active_learning > 0 else 0.0
+    pct_h21 = (cnt_h21 / tot_active_learning * 100) if tot_active_learning > 0 else 0.0
+    pct_h22 = (cnt_h22 / tot_active_learning * 100) if tot_active_learning > 0 else 0.0
+    pct_h01 = (cnt_h01 / tot_active_learning * 100) if tot_active_learning > 0 else 0.0
+    pct_h02 = (cnt_h02 / tot_active_learning * 100) if tot_active_learning > 0 else 0.0
+    pct_other_tag = (cnt_other_tag / tot_active_learning * 100) if tot_active_learning > 0 else 0.0
 
-    st.markdown("##### 👥 Phân Rã Tổng Học Viên Active Theo Từng Tag (W41 / Quý)")
-    kp_all, kp_h1, kp_h21, kp_h22, kp_h01, kp_h02 = st.columns(6)
+    st.markdown("##### 🌐 1. Quy Mô Toàn Bộ Học Viên Đang Học (Active)")
+    st.caption("Tổng hợp toàn bộ học viên đang học trong kỳ — bao gồm học viên chưa phân Hannah hoặc chưa được gán Tag chính.")
 
-    with kp_all:
+    m1, m2, m3, m4 = st.columns(4)
+
+    with m1:
         st.markdown(f"""
         <div class="metric-card" style="border-left-color: #2b8a3e;">
-            <div class="metric-title">🌐 TỔNG HV ACTIVE</div>
-            <div class="metric-value">{total_active_all:,}</div>
-            <div class="metric-sub">Bao gồm tất cả các Tag</div>
+            <div class="metric-title" style="color: #2b8a3e;">🌐 TỔNG SỐ HV ĐANG HỌC (ACTIVE)</div>
+            <div class="metric-value" style="color: #2b8a3e;">{tot_active_learning:,}</div>
+            <div class="metric-sub">Toàn bộ học viên active trong kỳ</div>
         </div>
         """, unsafe_allow_html=True)
+
+    with m2:
+        st.markdown(f"""
+        <div class="metric-card" style="border-left-color: #1c7ed6;">
+            <div class="metric-title" style="color: #1c7ed6;">👩‍💼 ĐÃ PHÂN CÔNG HANNAH</div>
+            <div class="metric-value" style="color: #1c7ed6;">{cnt_has_hannah:,} <span style="font-size: 15px; font-weight: normal;">({pct_has_hannah:.1f}%)</span></div>
+            <div class="metric-sub">Đang thuộc danh sách Hannah chăm sóc</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with m3:
+        st.markdown(f"""
+        <div class="metric-card" style="border-left-color: {'#e03131' if cnt_no_hannah > 0 else '#868e96'};">
+            <div class="metric-title" style="color: {'#e03131' if cnt_no_hannah > 0 else '#868e96'};">⏳ CHƯA PHÂN HANNAH</div>
+            <div class="metric-value" style="color: {'#e03131' if cnt_no_hannah > 0 else '#868e96'};">{cnt_no_hannah:,} <span style="font-size: 15px; font-weight: normal;">({pct_no_hannah:.1f}%)</span></div>
+            <div class="metric-sub">Cần rà soát phân công Hannah phụ trách</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with m4:
+        st.markdown(f"""
+        <div class="metric-card" style="border-left-color: {'#f59f00' if cnt_no_tag > 0 else '#868e96'};">
+            <div class="metric-title" style="color: {'#f59f00' if cnt_no_tag > 0 else '#868e96'};">🏷️ CHƯA GÁN TAG CHÍNH</div>
+            <div class="metric-value" style="color: {'#f59f00' if cnt_no_tag > 0 else '#868e96'};">{cnt_no_tag:,} <span style="font-size: 15px; font-weight: normal;">({pct_no_tag:.1f}%)</span></div>
+            <div class="metric-sub">Chưa có mã trong 5 Tag chính thức</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    st.markdown("---")
+
+    st.markdown("##### 👥 2. Phân Rã Dữ Liệu Học Viên Được Hannah Chăm Sóc Theo Tag")
+    st.caption("Cơ cấu học viên theo 5 Tag chính thức (bỏ qua các tag phụ như H1.1, 1-F limited; ưu tiên đúng nhóm trạng thái đặc thù).")
+
+    kp_h1, kp_h21, kp_h22, kp_h01, kp_h02, kp_other = st.columns(6)
 
     with kp_h1:
         st.markdown(f"""
         <div class="metric-card" style="border-left-color: #1c7ed6;">
-            <div class="metric-title" style="color: #1c7ed6;">🔵 TAG H1 (CHÍNH)</div>
+            <div class="metric-title" style="color: #1c7ed6;">🔵 TAG H1</div>
             <div class="metric-value" style="color: #1c7ed6;">{cnt_h1:,}</div>
             <div class="metric-sub"><b>{pct_h1:.1f}%</b> • Đang hỗ trợ</div>
         </div>
@@ -1354,7 +1426,7 @@ with tab1:
         st.markdown(f"""
         <div class="metric-card" style="border-left-color: #0ca678;">
             <div class="metric-title" style="color: #0ca678;">🟢 TAG H2.1</div>
-            <div class="metric-value">{cnt_h21:,}</div>
+            <div class="metric-value" style="color: #0ca678;">{cnt_h21:,}</div>
             <div class="metric-sub"><b>{pct_h21:.1f}%</b> • Học kiến thức</div>
         </div>
         """, unsafe_allow_html=True)
@@ -1363,7 +1435,7 @@ with tab1:
         st.markdown(f"""
         <div class="metric-card" style="border-left-color: #f59f00;">
             <div class="metric-title" style="color: #f59f00;">🟡 TAG H2.2</div>
-            <div class="metric-value">{cnt_h22:,}</div>
+            <div class="metric-value" style="color: #f59f00;">{cnt_h22:,}</div>
             <div class="metric-sub"><b>{pct_h22:.1f}%</b> • Tạm dừng học</div>
         </div>
         """, unsafe_allow_html=True)
@@ -1372,7 +1444,7 @@ with tab1:
         st.markdown(f"""
         <div class="metric-card" style="border-left-color: #f03e3e;">
             <div class="metric-title" style="color: #f03e3e;">🔴 TAG H0.1</div>
-            <div class="metric-value">{cnt_h01:,}</div>
+            <div class="metric-value" style="color: #f03e3e;">{cnt_h01:,}</div>
             <div class="metric-sub"><b>{pct_h01:.1f}%</b> • Mất liên lạc</div>
         </div>
         """, unsafe_allow_html=True)
@@ -1381,8 +1453,17 @@ with tab1:
         st.markdown(f"""
         <div class="metric-card" style="border-left-color: #868e96;">
             <div class="metric-title" style="color: #495057;">⚪ TAG H0.2</div>
-            <div class="metric-value">{cnt_h02:,}</div>
+            <div class="metric-value" style="color: #495057;">{cnt_h02:,}</div>
             <div class="metric-sub"><b>{pct_h02:.1f}%</b> • Xin ngừng học</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with kp_other:
+        st.markdown(f"""
+        <div class="metric-card" style="border-left-color: #adb5bd;">
+            <div class="metric-title" style="color: #868e96;">🏷️ CHƯA GÁN TAG</div>
+            <div class="metric-value" style="color: #868e96;">{cnt_other_tag:,}</div>
+            <div class="metric-sub"><b>{pct_other_tag:.1f}%</b> • Chưa có tag</div>
         </div>
         """, unsafe_allow_html=True)
 
@@ -1409,7 +1490,14 @@ with tab1:
         if selected_progs and len(selected_progs) < len(all_progs):
             df_trend_src = df_trend_src[df_trend_src["CHƯƠNG_TRÌNH"].isin(selected_progs)]
 
-        df_tag_trend = df_trend_src.groupby(["WEEK", "TAG_CODE"]).size().reset_index(name="SỐ_LƯỢNG")
+        # Nhận diện ID để nhóm đúng từng học viên duy nhất theo tuần
+        id_col_trend = "EMAIL" if ("EMAIL" in df_trend_src.columns and df_trend_src["EMAIL"].nunique() > 0) else ("MSSV" if "MSSV" in df_trend_src.columns else None)
+        if id_col_trend:
+            df_trend_unique = df_trend_src.drop_duplicates(subset=["WEEK", id_col_trend]).copy()
+        else:
+            df_trend_unique = df_trend_src.copy()
+
+        df_tag_trend = df_trend_unique.groupby(["WEEK", "TAG_CODE"]).size().reset_index(name="SỐ_LƯỢNG")
 
         if not df_tag_trend.empty:
             total_per_week = df_tag_trend.groupby("WEEK")["SỐ_LƯỢNG"].transform("sum")
@@ -1417,18 +1505,16 @@ with tab1:
             df_tag_trend["TỶ_LỆ"] = np.where(total_per_week > 0, (df_tag_trend["SỐ_LƯỢNG"] / total_per_week * 100), 0.0)
 
             # Nhãn hiển thị trên thanh cột:
-            # - Dạng Số lượng: hiển thị Số lượng và % (hoặc chỉ % nếu phân đoạn vừa phải)
             df_tag_trend["NHÃN_SỐ_LƯỢNG"] = df_tag_trend.apply(
                 lambda r: f"{r['SỐ_LƯỢNG']:,}<br>({r['TỶ_LỆ']:.1f}%)" if r["TỶ_LỆ"] >= 7.0 else (f"{r['TỶ_LỆ']:.1f}%" if r["TỶ_LỆ"] >= 3.5 else ""),
                 axis=1
             )
-            # - Dạng Tỷ trọng 100%: hiển thị %
             df_tag_trend["NHÃN_TỶ_LỆ"] = df_tag_trend["TỶ_LỆ"].apply(
                 lambda v: f"{v:.1f}%" if v >= 3.5 else ""
             )
 
             sorted_weeks = sorted(df_tag_trend["WEEK"].unique().tolist())
-            tag_order = ["H1", "H2.1", "H2.2", "H0.1", "H0.2", "Khác"]
+            tag_order = ["H1", "H2.1", "H2.2", "H0.1", "H0.2", "Chưa gán Tag"]
 
             is_pct_mode = (trend_view_mode == "Tỷ trọng 100%")
             y_field = "TỶ_LỆ" if is_pct_mode else "SỐ_LƯỢNG"
@@ -1444,7 +1530,7 @@ with tab1:
                 category_orders={"WEEK": sorted_weeks, "TAG_CODE": tag_order},
                 color_discrete_map={
                     "H1": "#1c7ed6", "H2.1": "#0ca678", "H2.2": "#f59f00",
-                    "H0.1": "#f03e3e", "H0.2": "#868e96", "Khác": "#adb5bd"
+                    "H0.1": "#f03e3e", "H0.2": "#868e96", "Chưa gán Tag": "#ced4da"
                 },
                 barmode="stack",
                 height=350
@@ -1515,26 +1601,67 @@ with tab1:
 
     with c2:
         st.markdown("##### 🍩 Tỷ Trọng Phân Bổ Học Viên Theo Tag")
-        tag_pie_data = pd.DataFrame({
-            "TAG": ["H1 (Đang hỗ trợ)", "H2.1 (Học kiến thức)", "H2.2 (Tạm dừng)", "H0.1 (Mất liên lạc)", "H0.2 (Xin ngừng)"],
-            "COUNT": [cnt_h1, cnt_h21, cnt_h22, cnt_h01, cnt_h02]
+        pie_labels = []
+        pie_counts = []
+        for tag_item, cnt_val in [
+            ("H1 (Đang hỗ trợ)", cnt_h1),
+            ("H2.1 (Học kiến thức)", cnt_h21),
+            ("H2.2 (Tạm dừng)", cnt_h22),
+            ("H0.1 (Mất liên lạc)", cnt_h01),
+            ("H0.2 (Xin ngừng)", cnt_h02),
+            ("Chưa gán Tag", cnt_other_tag)
+        ]:
+            if cnt_val > 0:
+                pie_labels.append(tag_item)
+                pie_counts.append(cnt_val)
+
+        tag_pie_data = pd.DataFrame({"TAG": pie_labels, "COUNT": pie_counts})
+        if not tag_pie_data.empty:
+            fig_tpie = px.pie(
+                tag_pie_data,
+                names="TAG",
+                values="COUNT",
+                color="TAG",
+                color_discrete_map={
+                    "H1 (Đang hỗ trợ)": "#1c7ed6",
+                    "H2.1 (Học kiến thức)": "#0ca678",
+                    "H2.2 (Tạm dừng)": "#f59f00",
+                    "H0.1 (Mất liên lạc)": "#f03e3e",
+                    "H0.2 (Xin ngừng)": "#868e96",
+                    "Chưa gán Tag": "#ced4da"
+                },
+                hole=0.45,
+                height=350
+            )
+            fig_tpie.update_traces(textposition='inside', textinfo='percent+label')
+            fig_tpie.update_layout(margin=dict(l=10, r=10, t=10, b=10), showlegend=False)
+            st.plotly_chart(fig_tpie, use_container_width=True)
+        else:
+            st.info("Chưa có dữ liệu phân bổ Tag.")
+
+    # --- KHỐI BỔ SUNG: BẢNG PHÂN BỔ QUY MÔ THEO TỪNG HANNAH & TRẠNG THÁI TAG ---
+    with st.expander("📋 **BẢNG PHÂN BỔ HỌC VIÊN THEO TỪNG HANNAH & 5 TAG CHÍNH** — Nhấp để xem chi tiết", expanded=False):
+        df_h_dist = df_t1_unique.groupby(["HANNAH", "TAG_CODE"]).size().unstack(fill_value=0)
+        for col_t in ["H1", "H2.1", "H2.2", "H0.1", "H0.2", "Chưa gán Tag"]:
+            if col_t not in df_h_dist.columns:
+                df_h_dist[col_t] = 0
+        df_h_dist["TỔNG_HV"] = df_h_dist[["H1", "H2.1", "H2.2", "H0.1", "H0.2", "Chưa gán Tag"]].sum(axis=1)
+        df_h_dist["TỶ_LỆ_H1 (%)"] = np.where(df_h_dist["TỔNG_HV"] > 0, round(df_h_dist["H1"] / df_h_dist["TỔNG_HV"] * 100, 1), 0.0)
+        df_h_dist = df_h_dist.sort_values(by="TỔNG_HV", ascending=False).reset_index()
+        
+        # Đổi tên cột cho trực quan
+        df_h_dist_view = df_h_dist.rename(columns={
+            "HANNAH": "Hannah Phụ Trách",
+            "TỔNG_HV": "Tổng HV Active",
+            "H1": "H1 (Đang hỗ trợ)",
+            "H2.1": "H2.1 (Kiến thức)",
+            "H2.2": "H2.2 (Tạm dừng)",
+            "H0.1": "H0.1 (Mất LL)",
+            "H0.2": "H0.2 (Xin ngừng)",
+            "Chưa gán Tag": "Chưa gán Tag",
+            "TỶ_LỆ_H1 (%)": "% H1"
         })
-        fig_tpie = px.pie(
-            tag_pie_data,
-            names="TAG",
-            values="COUNT",
-            color="TAG",
-            color_discrete_map={
-                "H1 (Đang hỗ trợ)": "#1c7ed6", "H2.1 (Học kiến thức)": "#0ca678",
-                "H2.2 (Tạm dừng)": "#f59f00", "H0.1 (Mất liên lạc)": "#f03e3e",
-                "H0.2 (Xin ngừng)": "#868e96"
-            },
-            hole=0.45,
-            height=350
-        )
-        fig_tpie.update_traces(textposition='inside', textinfo='percent+label')
-        fig_tpie.update_layout(margin=dict(l=10, r=10, t=10, b=10), showlegend=False)
-        st.plotly_chart(fig_tpie, use_container_width=True)
+        st.dataframe(df_h_dist_view, use_container_width=True, hide_index=True)
 
 # =========================================================================
 # TAB 2: TIẾN ĐỘ & DANH SÁCH PUSH HOÀN THÀNH MÔN (H1)
