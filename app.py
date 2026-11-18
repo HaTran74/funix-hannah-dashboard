@@ -558,6 +558,9 @@ df_base = df_quarter.copy()
 if selected_week != "Tất cả tuần trong Quý":
     df_base = df_base[df_base["WEEK"] == selected_week]
 
+# Giữ nguyên tập dữ liệu toàn bộ học viên của kỳ (trước khi lọc Hannah/Chương trình) để Tab 1 hiển thị quy mô toàn trường
+df_week_full = df_base.copy()
+
 # Xác định tuần trước đó để so sánh chuyển biến (W_prev)
 prev_week_name = None
 if selected_week != "Tất cả tuần trong Quý" and selected_week in all_sorted_weeks:
@@ -566,7 +569,7 @@ if selected_week != "Tất cả tuần trong Quý" and selected_week in all_sort
         prev_week_name = all_sorted_weeks[curr_idx - 1]
 
 # 3. BỘ LỌC HANNAH
-all_hannahs = sorted([h for h in df_base["HANNAH"].unique().tolist() if h and h != "N/A"])
+all_hannahs = sorted([h for h in df_base["HANNAH"].unique().tolist() if h])
 selected_hannahs = st.sidebar.multiselect("3. Hannah phụ trách:", all_hannahs, default=all_hannahs)
 
 # 4. BỘ LỌC CHƯƠNG TRÌNH
