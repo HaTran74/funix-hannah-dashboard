@@ -2549,7 +2549,7 @@ with tab4:
         st.markdown(f"<div style='margin-top: 28px; font-weight: bold; color: #1c7ed6;'>🔍 Số lượng: {len(df_filtered_action):,} học viên</div>", unsafe_allow_html=True)
 
     action_cols = [
-        "MSSV", "FULL_NAME", "HANNAH", "CHƯƠNG_TRÌNH", "MÔN_ĐANG_HỌC",
+        "WEEK", "MSSV", "FULL_NAME", "HANNAH", "CHƯƠNG_TRÌNH", "MÔN_ĐANG_HỌC",
         "TIẾN_ĐỘ_HỌC_THUẬT", "LEARNING_ACCESS", "MENTOR_SUPPORT", "ACADEMIC_OUTPUT", "TOTAL_ACTIVITY",
         "RISK_LEVEL", "ACTION_SUGGESTION"
     ]
@@ -2557,6 +2557,8 @@ with tab4:
 
     st.dataframe(
         df_filtered_action[present_action_cols].rename(columns={
+            "WEEK": "Tuần",
+            "MSSV": "MSSV",
             "FULL_NAME": "Họ và tên",
             "HANNAH": "Hannah",
             "CHƯƠNG_TRÌNH": "Chương trình",
@@ -2572,6 +2574,9 @@ with tab4:
         use_container_width=True,
         hide_index=True,
         column_config={
+            "Tuần": st.column_config.TextColumn("Tuần", pinned=True, width="small"),
+            "MSSV": st.column_config.TextColumn("MSSV", pinned=True, width="small"),
+            "Họ và tên": st.column_config.TextColumn("Họ và tên", pinned=True, width="medium"),
             "Tiến Độ Môn (%)": st.column_config.ProgressColumn("Tiến Độ Môn (%)", min_value=0, max_value=100, format="%.1f%%")
         }
     )
