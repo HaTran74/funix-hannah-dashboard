@@ -2085,7 +2085,7 @@ with tab2:
                 "TIẾN_ĐỘ_HỌC_THUẬT": st.column_config.ProgressColumn("Tiến Độ Môn", min_value=0, max_value=100, format="%.1f%%"),
                 "SẢN_PHẨM_TUẦN_NÀY": st.column_config.TextColumn("📝 Bài Nộp Tuần Này", disabled=True, width="medium", help="Bài tập Quiz, Lab, ASM... học viên mới nộp thêm trong tuần"),
                 "ACTION_TUẦN_TRƯỚC": st.column_config.TextColumn("Lịch Sử Action Tuần Trước", disabled=True, width="large"),
-                "BÀI_TẬP_CÒN_THIẾU": st.column_config.TextColumn("Bài Tập Còn Thiếu (Quiz/Lab/ASM...)", disabled=True, width="medium"),
+                "BÀI_TẬP_CÒN_THIẾU": st.column_config.TextColumn("Bài Tập Còn Thiếu (Đã làm / Tổng)", disabled=True, width="medium", help="Hiển thị số lượng bài đã hoàn thành trên tổng số bài cần làm (VD: 10/20 Quiz, 1/3 Lab, 0/1 Final Exam)"),
                 "ACTION_SUGGESTION": st.column_config.TextColumn("💡 Action Gợi Ý Cụ Thể Cho Hannah", disabled=True, width="large"),
                 "Trạng thái xử lý tuần này": st.column_config.SelectboxColumn(
                     "Trạng thái xử lý tuần này",
