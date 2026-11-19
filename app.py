@@ -367,18 +367,20 @@ def normalize_dataset(df):
     df["KHẢ_NĂNG_HOÀN_THÀNH"] = df.apply(evaluate_completion, axis=1)
 
     def format_missing_tasks(r):
-        q_miss = max(r.get("QUIZ_TOTAL", 0) - r.get("QUIZ_DONE", 0), 0)
-        l_miss = max(r.get("LAB_TOTAL", 0) - r.get("LAB_DONE", 0), 0)
-        a_miss = max(r.get("ASSIGNMENT_TOTAL", 0) - r.get("ASSIGNMENT_DONE", 0), 0)
-        p_miss = max(r.get("PROGRESS_TEST_TOTAL", 0) - r.get("PROGRESS_TEST_DONE", 0), 0)
-        f_miss = 1 if (r.get("FINAL_EXAM_TOTAL", 0) > 0 and r.get("FINAL_EXAM_DONE", 0) == 0) else 0
+        q_done, q_tot = int(r.get("QUIZ_DONE", 0)), int(r.get("QUIZ_TOTAL", 0))
+        l_done, l_tot = int(r.get("LAB_DONE", 0)), int(r.get("LAB_TOTAL", 0))
+        a_done, a_tot = int(r.get("ASSIGNMENT_DONE", 0)), int(r.get("ASSIGNMENT_TOTAL", 0))
+        p_done, p_tot = int(r.get("PROGRESS_TEST_DONE", 0)), int(r.get("PROGRESS_TEST_TOTAL", 0))
+        f_done, f_tot = int(r.get("FINAL_EXAM_DONE", 0)), int(r.get("FINAL_EXAM_TOTAL", 0))
+        d_done, d_tot = int(r.get("ĐỒ_ÁN_DONE", 0)), int(r.get("ĐỒ_ÁN_TOTAL", 0))
 
         items = []
-        if q_miss > 0: items.append(f"{q_miss} Quiz")
-        if l_miss > 0: items.append(f"{l_miss} Lab")
-        if a_miss > 0: items.append(f"{a_miss} ASM")
-        if p_miss > 0: items.append(f"{p_miss} Progress Test")
-        if f_miss > 0: items.append("Thi Final Exam")
+        if q_tot > 0 and q_done < q_tot: items.append(f"{q_done}/{q_tot} Quiz")
+        if l_tot > 0 and l_done < l_tot: items.append(f"{l_done}/{l_tot} Lab")
+        if a_tot > 0 and a_done < a_tot: items.append(f"{a_done}/{a_tot} ASM")
+        if p_tot > 0 and p_done < p_tot: items.append(f"{p_done}/{p_tot} Progress Test")
+        if f_tot > 0 and f_done < f_tot: items.append(f"{f_done}/{f_tot} Final Exam")
+        if d_tot > 0 and d_done < d_tot: items.append(f"{d_done}/{d_tot} Đồ án")
         return ", ".join(items) if items else "Đã xong 100% bài môn"
 
     def format_xp_progress(r):
@@ -401,18 +403,20 @@ def normalize_dataset(df):
         if xp_pct in ["nan", "None"]:
             xp_pct = ""
 
-        q_miss = max(r.get("QUIZ_TOTAL", 0) - r.get("QUIZ_DONE", 0), 0)
-        l_miss = max(r.get("LAB_TOTAL", 0) - r.get("LAB_DONE", 0), 0)
-        a_miss = max(r.get("ASSIGNMENT_TOTAL", 0) - r.get("ASSIGNMENT_DONE", 0), 0)
-        p_miss = max(r.get("PROGRESS_TEST_TOTAL", 0) - r.get("PROGRESS_TEST_DONE", 0), 0)
-        f_miss = 1 if (r.get("FINAL_EXAM_TOTAL", 0) > 0 and r.get("FINAL_EXAM_DONE", 0) == 0) else 0
+        q_done, q_tot = int(r.get("QUIZ_DONE", 0)), int(r.get("QUIZ_TOTAL", 0))
+        l_done, l_tot = int(r.get("LAB_DONE", 0)), int(r.get("LAB_TOTAL", 0))
+        a_done, a_tot = int(r.get("ASSIGNMENT_DONE", 0)), int(r.get("ASSIGNMENT_TOTAL", 0))
+        p_done, p_tot = int(r.get("PROGRESS_TEST_DONE", 0)), int(r.get("PROGRESS_TEST_TOTAL", 0))
+        f_done, f_tot = int(r.get("FINAL_EXAM_DONE", 0)), int(r.get("FINAL_EXAM_TOTAL", 0))
+        d_done, d_tot = int(r.get("ĐỒ_ÁN_DONE", 0)), int(r.get("ĐỒ_ÁN_TOTAL", 0))
 
         missing_list = []
-        if q_miss > 0: missing_list.append(f"{q_miss} Quiz")
-        if l_miss > 0: missing_list.append(f"{l_miss} Lab")
-        if a_miss > 0: missing_list.append(f"{a_miss} ASM")
-        if p_miss > 0: missing_list.append(f"{p_miss} Progress Test")
-        if f_miss > 0: missing_list.append("Thi Final Exam")
+        if q_tot > 0 and q_done < q_tot: missing_list.append(f"{q_done}/{q_tot} Quiz")
+        if l_tot > 0 and l_done < l_tot: missing_list.append(f"{l_done}/{l_tot} Lab")
+        if a_tot > 0 and a_done < a_tot: missing_list.append(f"{a_done}/{a_tot} ASM")
+        if p_tot > 0 and p_done < p_tot: missing_list.append(f"{p_done}/{p_tot} Progress Test")
+        if f_tot > 0 and f_done < f_tot: missing_list.append(f"{f_done}/{f_tot} Final Exam")
+        if d_tot > 0 and d_done < d_tot: missing_list.append(f"{d_done}/{d_tot} Đồ án")
 
         miss_str = ", ".join(missing_list) if missing_list else "Đã xong 100% bài môn"
         first_miss = missing_list[0] if missing_list else "bài tập còn lại"
