@@ -2066,9 +2066,9 @@ with tab2:
             use_container_width=True,
             hide_index=True,
             column_config={
-                "WEEK": st.column_config.TextColumn("Tuần", disabled=True, width="small"),
-                "MSSV": st.column_config.TextColumn("MSSV", disabled=True, width="small"),
-                "FULL_NAME": st.column_config.TextColumn("Họ và Tên", disabled=True, width="medium"),
+                "WEEK": st.column_config.TextColumn("Tuần", disabled=True, width="small", pinned=True),
+                "MSSV": st.column_config.TextColumn("MSSV", disabled=True, width="small", pinned=True),
+                "FULL_NAME": st.column_config.TextColumn("Họ và Tên", disabled=True, width="medium", pinned=True),
                 "HANNAH": st.column_config.TextColumn("Hannah", disabled=True, width="small"),
                 "CHƯƠNG_TRÌNH": st.column_config.TextColumn("Chương Trình", disabled=True, width="small"),
                 "MÔN_ĐANG_HỌC": st.column_config.TextColumn("Môn Đang Học", disabled=True, width="small"),
