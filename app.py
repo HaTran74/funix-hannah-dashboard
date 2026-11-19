@@ -2835,6 +2835,9 @@ with tab5:
         use_container_width=True,
         hide_index=True,
         column_config={
+            "WEEK": st.column_config.TextColumn("Tuần", pinned=True, width="small"),
+            "MSSV": st.column_config.TextColumn("MSSV", pinned=True, width="small"),
+            "FULL_NAME": st.column_config.TextColumn("Họ và Tên", pinned=True, width="medium"),
             "TIẾN_ĐỘ_HỌC_THUẬT": st.column_config.ProgressColumn("Tiến Độ Môn (%)", min_value=0, max_value=100, format="%.1f%%")
         }
     )
