@@ -2722,9 +2722,9 @@ with tab5:
                 use_container_width=True,
                 hide_index=True,
                 column_config={
-                    "WEEK": st.column_config.TextColumn("Tuần", disabled=True, width="small"),
-                    "MSSV": st.column_config.TextColumn("MSSV", disabled=True, width="small"),
-                    "FULL_NAME": st.column_config.TextColumn("Họ và Tên", disabled=True, width="medium"),
+                    "WEEK": st.column_config.TextColumn("Tuần", disabled=True, width="small", pinned=True),
+                    "MSSV": st.column_config.TextColumn("MSSV", disabled=True, width="small", pinned=True),
+                    "FULL_NAME": st.column_config.TextColumn("Họ và Tên", disabled=True, width="medium", pinned=True),
                     "HANNAH": st.column_config.TextColumn("Hannah", disabled=True, width="small"),
                     "MÔN_ĐANG_HỌC": st.column_config.TextColumn("Môn", disabled=True, width="small"),
                     "CHUYỂN_BIẾN_TUẦN_NÀY": st.column_config.TextColumn("Chuyển Biến Tuần Này (vs Tuần Trước)", disabled=True, width="medium"),
